@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %} Register {% endblock %}
+{% block content %}
+
+<div class="container-fluid w-100 vh-100 d-flex justify-content-center align-items-center">
+  <div class="register-box w-100" style="max-width: 1200px;">
+    <div class="register-logo text-center">
+      <img src="{% static 'img/BISP.png' %}" alt="AdminLTE Logo" class="brand-image img-thumbnail elevation-3" style="width: 25% ; height: 25% ; opacity: .9;">
+    </div>
+
+    <div class="card p-4">
+      <div class="card-body register-card-body">
+        <p class="login-box-msg text-center">Register a new Employee</p>
+
+        <form action="{% url 'register_user' %}" method="post">
+          {% csrf_token %}
+          <div class="row g-3">
+
+            <div class="col-md-4">
+              <label for="fullName">Full Name</label>
+              <input type="text" class="form-control" id="fullName" name="Full_Name" placeholder="Enter full name">
+            </div>
+
+            <div class="col-md-4">
+              <label for="email">Email</label>
+              <input type="email" class="form-control" id="email" name="Email" placeholder="Enter email">
+            </div>
+
+            <div class="col-md-4">
+              <label for="password">Password</label>
+              <input type="password" class="form-control" id="password" name="PWD" placeholder="Enter password">
+            </div>
+
+            <div class="col-md-4">
+              <label for="repassword">Retype Password</label>
+              <input type="password" class="form-control" id="repassword" name="RPWD" placeholder="Retype password">
+            </div>
+
+            <div class="col-md-4">
+              <label>Gender</label>
+              <div class="d-flex">
+                <input type="radio" name="gender" value="male" class="me-1"> Male
+                <br>
+                <input type="radio" name="gender" value="female" class="ms-3 me-1"> Female
+              </div>
+            </div>
+
+            <div class="col-md-4">
+              <label for="dob">Date of Birth</label>
+              <input type="date" class="form-control" id="dob" name="DOB">
+            </div>
+
+            <div class="col-md-4">
+              <label for="nationality">Nationality</label>
+              <input type="text" class="form-control" id="nationality" name="Nationality" placeholder="Enter nationality">
+            </div>
+
+            <div class="col-md-4">
+              <label for="designation">Designation</label>
+              <input type="text" class="form-control" id="designation" name="Designation" placeholder="Enter designation">
+            </div>
+
+            <div class="col-md-4">
+              <label for="permanentAddress">Permanent Address</label>
+              <input type="text" class="form-control" id="permanentAddress" name="Per_Address" placeholder="Enter permanent address">
+            </div>
+
+            <div class="col-md-4">
+              <label for="currentAddress">Current Address</label>
+              <input type="text" class="form-control" id="currentAddress" name="Cur_Address" placeholder="Enter current address">
+            </div>
+
+            <div class="col-md-4">
+              <label for="aadhar">Aadhar Number</label>
+              <input type="number" class="form-control" id="aadhar" name="Aadhar" placeholder="Enter Aadhar number">
+            </div>
+
+            <div class="col-md-4">
+              <label for="phone">Phone Number</label>
+              <input type="number" class="form-control" id="phone" name="Phone" placeholder="Enter phone number">
+            </div>
+
+            <div class="col-md-4">
+              <label for="doj">Date of Joining</label>
+              <input type="date" class="form-control" id="doj" name="DOJ">
+            </div>
+
+            <div class="col-md-4">
+              <label for="workLocation">Work Location</label>
+              <input type="text" class="form-control" id="workLocation" name="workloc" placeholder="Enter work location">
+            </div>
+
+          </div>
+
+          <div class="row mt-4">
+            <div class="col-8">
+              <input type="checkbox" id="agreeTerms" name="terms" value="agree">
+              <label for="agreeTerms"> I agree to the <a href="#">terms</a></label>
+            </div>
+
+            <div class="col-4">
+              <button type="submit" class="btn btn-primary btn-block">Register</button>
+            </div>
+          </div>
+
+        </form>
+
+        <a href="login.html" class="text-center d-block mt-3">I already have a membership</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
