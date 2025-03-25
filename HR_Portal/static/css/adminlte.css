@@ -13185,6 +13185,7 @@ body:not(.layout-fixed) .main-sidebar .sidebar {
 
 .user-panel {
   position: relative;
+
 }
 
 [class*="sidebar-dark"] .user-panel {

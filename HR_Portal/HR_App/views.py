@@ -17,7 +17,8 @@ from datetime import datetime
 # Create your views here.
 
 def Admin(request):
-    return render(request,'admin_templates/index.html')
+
+    return render(request,'admin_templates/index.html',)
 
 def Profile(request):
     return render(request,'admin_templates/profile.html')

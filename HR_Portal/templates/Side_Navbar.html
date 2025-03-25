@@ -7,6 +7,7 @@
     <a href="{% url 'Adminpanel' %}" class="brand-link">
       <img src="{% static 'img/BISP.png' %}" alt="AdminLTE Logo"  class="brand-image img-thumbnail elevation-3" style="opacity: .8">
       <span class="brand-text font-weight-light">Admin Panel</span>
+
     </a>
 
     <!-- Sidebar -->
@@ -14,10 +15,15 @@
       <!-- Sidebar user panel (optional) -->
       <div class="user-panel mt-3 pb-3 mb-3 d-flex">
         <div class="image">
-          <img src="{% static 'img/user2-160x160.jpg' %}" class="img-circle elevation-2" alt="User Image">
+          <img src="{% static 'img/user2-160x160.jpg' %}" class="img-circle elevation-3" style="width: 50px; height: 50px; object-fit: cover
+          " alt="User Image">
         </div>
         <div class="info">
-          <a href="#" class="d-block">Alexander Pierce</a>
+          <a href="#" class="d-block">Apurv Malviya</a>
+          <a href="#" class="d-block">Software Developer</a>
+
+
+
         </div>
       </div>
 
@@ -133,25 +139,13 @@
               <li class="nav-item">
                 <a href="pages/forms/general.html" class="nav-link">
                   <i class="far fa-circle nav-icon"></i>
-                  <p>General Elements</p>
+                  <p>Leave Record</p>
                 </a>
               </li>
               <li class="nav-item">
                 <a href="pages/forms/advanced.html" class="nav-link">
                   <i class="far fa-circle nav-icon"></i>
-                  <p>Advanced Elements</p>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a href="pages/forms/editors.html" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Editors</p>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a href="pages/forms/validation.html" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Validation</p>
+                  <p>Apply Leave</p>
                 </a>
               </li>
             </ul>
@@ -168,19 +162,19 @@
               <li class="nav-item">
                 <a href="{% url 'register' %}" class="nav-link">
                   <i class="far fa-circle nav-icon"></i>
-                  <p>Employee</p>
+                  <p>Add Employee</p>
                 </a>
               </li>
               <li class="nav-item">
                 <a href="pages/tables/data.html" class="nav-link">
                   <i class="far fa-circle nav-icon"></i>
-                  <p>Leaves</p>
+                  <p>Add Leaves</p>
                 </a>
               </li>
               <li class="nav-item">
                 <a href="pages/tables/jsgrid.html" class="nav-link">
                   <i class="far fa-circle nav-icon"></i>
-                  <p>Designation</p>
+                  <p>Add Designation</p>
                 </a>
               </li>
             </ul>

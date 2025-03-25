@@ -19,5 +19,8 @@ class EmpBISP(models.Model):
     phone_number = models.CharField(validators=[phone_regex], max_length=15, unique=True)
 
     email = models.EmailField(max_length=50)
+    designation=models.CharField(max_length=200)
+    password=models.CharField(max_length=200)
+
 
 
