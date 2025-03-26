@@ -21,6 +21,10 @@ class EmpBISP(models.Model):
     email = models.EmailField(max_length=50)
     designation=models.CharField(max_length=200)
     password=models.CharField(max_length=200)
+    aadhar_card=models.CharField(max_length=200)
+    date_of_join=models.CharField(max_length=200)
+    work_location=models.CharField(max_length=200)
+
 
 
 

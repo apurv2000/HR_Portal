@@ -1,13 +1,6 @@
-
-from datetime import datetime
-from django.shortcuts import render,redirect
 from .models import EmpBISP
-from django.contrib import messages
 from django.contrib.auth import authenticate, login
-from django.contrib.auth.hashers import check_password
-from django.contrib.auth.hashers import make_password
-
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.hashers import make_password
 from django.core.validators import validate_email
@@ -47,8 +40,38 @@ def Register(request):
 def Login(request):
     return render(request,'admin_templates/login.html')
 
+def EmpList(request):
+    employees = EmpBISP.objects.all()
+    return render(request,'admin_templates/Employee_List.html',{'employees': employees})
 
+def delete_employee(request, id):
+    employee = get_object_or_404(EmpBISP, id=id)
+    employee.delete()
+    return redirect('Emplist')
 
+def update_emp_page(request,id):
+    employee = get_object_or_404(EmpBISP, id=id)
+    return render(request,'admin_templates/Update_Emp.html', {'employee': employee})
+
+def update_employee(request, id):
+    employee = get_object_or_404(EmpBISP, id=id)
+    if request.method == 'POST':
+        employee.name = request.POST['name']
+        employee.email = request.POST['email']
+        employee.password = request.POST['password']
+        employee.dob = request.POST['dob']
+        employee.nationality = request.POST['nationality']
+        employee.designation = request.POST['designation']
+        employee.permanent_address = request.POST['permanent_address']
+        employee.current_address = request.POST['current_address']
+        employee.aadhar_card = request.POST['aadhar_card']
+        employee.phone_number = request.POST['phone_number']
+        employee.date_of_join = request.POST['date_of_join']
+        employee.work_location = request.POST['work_location']
+        employee.gender = request.POST['gender']
+        employee.save()
+        return redirect('Emplist')
+    return render(request, 'admin_templates/Update_Emp.html', {'employee': employee})
 
 def register_user(request):
     if request.method == "POST":
@@ -121,7 +144,8 @@ def register_user(request):
         )
         user.save()
 
-        messages.success(request, "Registration successful! Please log in.")
+        messages.success(request, "Employee Added!")
         return redirect('Adminpanel')  # Ensure 'adminpanel' matches your actual URL name
 
     return render(request, 'admin_templates/register.html')
+
