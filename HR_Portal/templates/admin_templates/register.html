@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
-{% block title %} Register {% endblock %}
+{% block title %} {{ employee.id|default:"Register" }} Employee {% endblock %}
 {% block content %}
 
 <div class="container-fluid w-100 vh-100 d-flex justify-content-center align-items-center">
@@ -11,98 +11,137 @@
 
     <div class="card p-4">
       <div class="card-body register-card-body">
-        <p class="login-box-msg text-center">Register a new Employee</p>
+        <p class="login-box-msg text-center">
+          {% if employee %} Update Employee {% else %} Register a new Employee {% endif %}
+        </p>
 
-        <form action="{% url 'register_user' %}" method="post">
+        <!--Error Message   -->
+        {% if messages %}
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+          <ul class="mb-0">
+            {% for message in messages %}
+              <li>{{ message }}</li>
+            {% endfor %}
+          </ul>
+          <button type="button" class="close" data-bs-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        {% endif %}
+        <!-- End -->
+
+        <form action="{% if employee %}{% url 'update_employee' employee.id %}{% else %}{% url 'register_user' %}{% endif %}"
+              method="post" enctype="multipart/form-data">
           {% csrf_token %}
           <div class="row g-3">
 
             <div class="col-md-4">
-              <label for="fullName">Full Name</label>
-              <input type="text" class="form-control" id="fullName" name="Full_Name" placeholder="Enter full name" required>
+              <label for="fullName">Full Name <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="fullName" name="Full_Name"
+                     value="{{ employee.name|default:'' }}" placeholder="Enter full name" required>
             </div>
 
             <div class="col-md-4">
-              <label for="email">Email</label>
-              <input type="email" class="form-control" id="email" name="Email" placeholder="Enter email" required>
+              <label for="email">Email <span class="text-danger">*</span></label>
+              <input type="email" class="form-control" id="email" name="Email"
+                     value="{{ employee.email|default:'' }}" placeholder="Enter email" required>
             </div>
 
             <div class="col-md-4">
-              <label for="password">Password</label>
-              <input type="password" class="form-control" id="password" name="PWD" placeholder="Enter password" required>
+              <label for="password">Password <span class="text-danger">*</span></label>
+              <input type="password" class="form-control" id="password" name="PWD"
+                     placeholder="Enter password" {% if not employee %}required{% endif %}>
             </div>
 
             <div class="col-md-4">
               <label for="repassword">Retype Password</label>
-              <input type="password" class="form-control" id="repassword" name="RPWD" placeholder="Retype password">
+              <input type="password" class="form-control" id="repassword" name="RPWD"
+                     placeholder="Retype password" {% if not employee %}required{% endif %}>
             </div>
 
             <div class="col-md-4">
               <label>Gender</label>
               <div class="d-flex">
-                <input type="radio" name="gender" value="male" class="me-1"> Male
+                <input type="radio" name="gender" value="male" class="me-1"
+                       {% if employee.gender == "male" %}checked{% endif %}> Male
                 <br>
-                <input type="radio" name="gender" value="female" class="ms-3 me-1"> Female
+                <input type="radio" name="gender" value="female" class="ms-3 me-1"
+                       {% if employee.gender == "female" %}checked{% endif %}> Female
               </div>
             </div>
 
             <div class="col-md-4">
-              <label for="dob">Date of Birth</label>
-              <input type="date" class="form-control" id="dob" name="DOB" required>
+              <label for="dob">Date of Birth <span class="text-danger">*</span></label>
+              <input type="date" class="form-control" id="dob" name="DOB"
+                     value="{{ employee.dob}}" required>
             </div>
 
             <div class="col-md-4">
               <label for="nationality">Nationality</label>
-              <input type="text" class="form-control" id="nationality" name="Nationality" placeholder="Enter nationality">
+              <input type="text" class="form-control" id="nationality" name="Nationality"
+                     value="{{ employee.nationality|default:'' }}" placeholder="Enter nationality">
             </div>
 
             <div class="col-md-4">
-              <label for="designation">Designation</label>
-              <input type="text" class="form-control" id="designation" name="Designation" placeholder="Enter designation" required>
+              <label for="designation">Designation <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="designation" name="Designation"
+                     value="{{ employee.designation|default:'' }}" placeholder="Enter designation" required>
             </div>
 
             <div class="col-md-4">
-              <label for="permanentAddress">Permanent Address</label>
-              <input type="text" class="form-control" id="permanentAddress" name="Per_Address" required placeholder="Enter permanent address">
+              <label for="permanentAddress">Permanent Address <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="permanentAddress" name="Per_Address"
+                     value="{{ employee.permanent_address|default:'' }}" placeholder="Enter permanent address" required>
             </div>
 
             <div class="col-md-4">
-              <label for="currentAddress">Current Address</label>
-              <input type="text" class="form-control" id="currentAddress" name="Cur_Address" required placeholder="Enter current address">
+              <label for="currentAddress">Current Address  <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="currentAddress" name="Cur_Address"
+                     value="{{ employee.current_address|default:'' }}" placeholder="Enter current address" required>
             </div>
 
             <div class="col-md-4">
               <label for="aadhar">Aadhar Number</label>
-              <input type="number" class="form-control" id="aadhar" name="Aadhar" placeholder="Enter Aadhar number">
+              <input type="number" class="form-control" id="aadhar" name="Aadhar"
+                     value="{{ employee.aadhar_card }}" placeholder="Enter Aadhar number">
             </div>
 
             <div class="col-md-4">
-              <label for="phone">Phone Number</label>
-              <input type="number" class="form-control" id="phone" name="Phone" required placeholder="Enter phone number">
+              <label for="phone">Phone Number <span class="text-danger">*</span></label>
+              <input type="number" class="form-control" id="phone" name="Phone"
+                     value="{{ employee.phone_number|default:'' }}" placeholder="Enter phone number" required>
             </div>
 
             <div class="col-md-4">
               <label for="doj">Date of Joining</label>
-              <input type="date" class="form-control" id="doj" name="DOJ">
+              <input type="date" class="form-control" id="doj" name="DOJ"
+                     value="{{ employee.date_of_join}}">
             </div>
 
             <div class="col-md-4">
               <label for="workLocation">Work Location</label>
-              <input type="text" class="form-control" id="workLocation" name="workloc" placeholder="Enter work location">
+              <input type="text" class="form-control" id="workLocation" name="workloc"
+                     value="{{ employee.work_location|default:'' }}" placeholder="Enter work location">
             </div>
 
+            <div class="col-md-4">
+              <label for="ProfileImage">Profile Image</label>
+              <input type="file" class="form-control" id="ProfileImage" name="image">
+              {% if employee.profile_picture %}
+                <img src="{{ employee.profile_picture.url }}" class="img-thumbnail mt-2" width="100">
+              {% endif %}
+            </div>
           </div>
 
           <div class="row mt-4 justify-content-center">
-          <div class="col-4 d-flex justify-content-center">
-               <button type="submit" class="btn btn-primary w-50 mx-2">Register</button>
-                <a href="{% url 'Emplist' %}" class="btn btn-secondary w-50 mx-2">Back</a>
+            <div class="col-4 d-flex justify-content-center">
+              <button type="submit" class="btn btn-primary w-50 mx-2">
+                {% if employee %} Update {% else %} Register {% endif %}
+              </button>
+              <a href="{% url 'Emplist' %}" class="btn btn-secondary w-50 mx-2">Back</a>
+            </div>
           </div>
-          </div>
-
-
         </form>
-
       </div>
     </div>
   </div>

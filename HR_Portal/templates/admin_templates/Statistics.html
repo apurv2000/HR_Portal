@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+
+<div class="container mt-4">
+        <h4><i class="fas fa-tasks"></i> Department Wise Task & Leave Request</h4>
+
+        <div class="row mt-3">
+            <div class="col-md-6 col-lg-3">
+                <div class="card department-card">
+                    <h5 class="text-primary">IT DEPARTMENT</h5>
+                    <p>Pending Task: <b>10</b></p>
+                    <p>Leave Request: <b>30</b></p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="card department-card">
+                    <h5 class="text-primary">EPM DEPARTMENT</h5>
+                    <p>Pending Task: <b>10</b></p>
+                    <p>Leave Request: <b>40</b></p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="card department-card">
+                    <h5 class="text-primary">HR DEPARTMENT</h5>
+                    <p>Pending Task: <b>10</b></p>
+                    <p>Leave Request: <b>40</b></p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="card department-card">
+                    <h5 class="text-primary">OTHER DEPARTMENT</h5>
+                    <p>Pending Task: <b>10</b></p>
+                    <p>Leave Request: <b>40</b></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-4">
+                <div class="card p-3">
+                    <h6>Statistics</h6>
+                    <p>Today Leave: 4 / 8</p>
+                    <div class="progress mb-2">
+                        <div class="progress-bar bg-primary" style="width: 50%"></div>
+                    </div>
+                    <p>Pending Leave: 15 / 32</p>
+                    <div class="progress mb-2">
+                        <div class="progress-bar bg-warning" style="width: 47%"></div>
+                    </div>
+                    <p>Approved Leave: 25 / 50</p>
+                    <div class="progress">
+                        <div class="progress-bar bg-success" style="width: 50%"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card p-3">
+                    <h6>Task Statistics</h6>
+                    <p>Total Tasks: <b>385</b></p>
+                    <p>Overdue Tasks: <b>19</b></p>
+                    <p>Completed Tasks: 166 (43%)</p>
+                    <div class="progress">
+                        <div class="progress-bar bg-success" style="width: 43%"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card p-3">
+                    <h6>Latest Activity</h6>
+                    <p class="text-primary">Approved Request</p>
+                    <p>Lorem ipsum dolor sit amet.</p>
+                    <p class="text-warning">Pending Request</p>
+                    <p>Lorem ipsum dolor sit amet.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

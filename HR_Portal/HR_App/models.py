@@ -1,10 +1,10 @@
-from django.db import models
+
 from django.db import models
 from django.core.validators import RegexValidator
 from datetime import date, datetime  # Import date
 
 
-class EmpBISP(models.Model):
+class EmployeeBISP(models.Model):
     name = models.CharField(max_length=100)
     dob =  models.CharField(max_length=10)
     gender = models.CharField(max_length=10)
@@ -24,6 +24,7 @@ class EmpBISP(models.Model):
     aadhar_card=models.CharField(max_length=200)
     date_of_join=models.CharField(max_length=200)
     work_location=models.CharField(max_length=200)
+    profile_picture = models.ImageField(upload_to="profile_pics/", blank=True, null=True)
 
 
 

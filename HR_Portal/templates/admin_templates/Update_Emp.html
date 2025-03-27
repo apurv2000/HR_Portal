@@ -112,6 +112,13 @@
                       </div>
                     </div>
                   </div>
+                   <div class="row">
+                    <div class="col-md-6">
+                      <div class="form-group">
+                        <label for="ProfileImages">Profile Image</label>
+                        <input type="file" name="ProfileImage" class="form-control" id="ProfileImages" value="{{ employee.profile_picture }}">
+                      </div>
+                    </div>
                   <div class="form-check">
                     <input type="checkbox" class="form-check-input" id="active" name="active" {% if employee.active %}checked{% endif %}>
                     <label class="form-check-label" for="active">Active</label>
