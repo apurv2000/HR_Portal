@@ -1,10 +1,10 @@
-{% load static %}
+{% load static %} <!-- Loads static files for images, CSS, etc. -->
 <!-- Main Sidebar Container -->
   <aside class="main-sidebar sidebar-dark-primary elevation-4">
     <!-- Brand Logo -->
     <a href="{% url 'Adminpanel' %}" class="brand-link">
       <img src="{% static 'img/BISP.png' %}" alt="AdminLTE Logo"  class="brand-image img-thumbnail elevation-3" style="opacity: .8">
-      <span class="brand-text font-weight-light">Admin Panel</span>
+      <span class="brand-text font-weight-light">{{request.session.designation}}</span>
     </a>
 
     <!-- Sidebar -->
@@ -12,12 +12,12 @@
       <!-- Sidebar user panel (optional) -->
       <div class="user-panel mt-3 pb-3 mb-3 d-flex">
         <div class="image">
-          <img src="{% static 'img/user2-160x160.jpg' %}" class="img-circle elevation-3" style="width: 50px; height: 50px; object-fit: cover
+          <img src="{{request.session.ProfileImage}}" class="img-circle elevation-3" style="width: 50px; height: 50px; object-fit: cover
           " alt="User Image">
         </div>
         <div class="info">
-          <a href="#" class="d-block">Apurv Malviya</a>
-          <a href="#" class="d-block">Software Developer</a>
+          <a href="#" class="d-block">{{request.session.employee_name}}</a>
+          <a href="#" class="d-block">{{request.session.designation}}</a>
         </div>
       </div>
 
@@ -34,33 +34,49 @@
       </div>
 
       <!-- Sidebar Menu -->
-      <nav class="mt-2">
-        <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
-          <!--Dashboard-->
-            <a href="{% url 'Adminpanel' %}" class="nav-link ">
-              <i class="nav-icon fas fa-tachometer-alt"></i>
-              <p>
-                Dashboard
-              </p>
-            </a>
-          <!--Project-->
-            <a href="pages/widgets.html" class="nav-link">
-              <i class="nav-icon fas fa-th"></i>
-              <p>
-                Project
-              </p>
-            </a>
-          <!--Task-->
-            <a href="#" class="nav-link">
-              <i class="nav-icon fas fa-copy"></i>
-              <p>
-                Task
-              </p>
-            </a>
-          <!--Timesheet-->
-          <li class="nav-item">
-            <a href="#" class="nav-link">
-              <i class="nav-icon fas fa-tree"></i>
+   <nav class="mt-2">
+  <ul class="nav nav-pills nav-sidebar flex-column " data-widget="treeview" role="menu" data-accordion="false">
+
+    {# Dashboard link varies based on designation #}
+    {% if request.session.designation == "HR" %}
+      <li class="nav-item">
+        <a href="{% url 'Hrpanel' %}" class="nav-link">
+          <i class="nav-icon fas fa-tachometer-alt"></i>
+          <p>Dashboard</p>
+        </a>
+      </li>
+    {% elif request.session.designation == "Developer" or request.session.designation == "Accountant" %}
+      <li class="nav-item">
+        <a href="{% url 'Emppanel' %}" class="nav-link">
+          <i class="nav-icon fas fa-tachometer-alt"></i>
+          <p>Dashboard</p>
+        </a>
+      </li>
+    {% elif request.session.designation == "Manager" %}
+      <li class="nav-item">
+        <a href="{% url 'Adminpanel' %}" class="nav-link">
+          <i class="nav-icon fas fa-tachometer-alt"></i>
+          <p>Dashboard</p>
+        </a>
+      </li>
+    {% endif %}
+
+    {# Common navigation items that appear for all users #}
+    <li class="nav-item">
+      <a href="pages/widgets.html" class="nav-link">
+        <i class="nav-icon fas fa-th"></i>
+        <p>Project</p>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a href="#" class="nav-link">
+        <i class="nav-icon fas fa-copy"></i>
+        <p>Task</p>
+      </a>
+    </li>
+     <li class="nav-item">
+       <a href="#" class="nav-link">
+         <i class="nav-icon fas fa-tree"></i>
               <p>
                 Timesheet
                 <i class="fas fa-angle-left right"></i>
@@ -116,62 +132,76 @@
                 </a>
               </li>
             </ul>
-          </li>
-          <!--Leave-->
-          <li class="nav-item">
-            <a href="#" class="nav-link">
-              <i class="nav-icon fas fa-edit"></i>
-              <p>
-                Leave
-                <i class="fas fa-angle-left right"></i>
-              </p>
-            </a>
-            <ul class="nav nav-treeview">
-              <li class="nav-item">
-                <a href="pages/forms/general.html" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Leave Record</p>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a href="pages/forms/advanced.html" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Apply Leave</p>
-                </a>
-              </li>
-            </ul>
-          </li>
-          <!--Config-->
-          <li class="nav-item">
-            <a href="#" class="nav-link">
-              <i class="nav-icon fas fa-table" ></i>
-              <p>
-                Config
-                <i class="fas fa-angle-left right"></i>
-              </p>
-            </a>
-            <ul class="nav nav-treeview">
-                <li class="nav-item">
-                <a href="{% url 'Emplist' %}" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Employee List</p>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a href="pages/tables/data.html" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Add Leaves</p>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a href="pages/tables/jsgrid.html" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Add Designation</p>
-                </a>
-              </li>
-            </ul>
-          </li>
-        </ul>
-      </nav>
+     </li>
+    <li class="nav-item">
+      <a href="#" class="nav-link">
+        <i class="nav-icon fas fa-edit"></i>
+        <p>
+          Leave
+          <i class="fas fa-angle-left right"></i>
+        </p>
+      </a>
+      <ul class="nav nav-treeview">
+        <li class="nav-item">
+          <a href="pages/forms/general.html" class="nav-link">
+            <i class="far fa-circle nav-icon"></i>
+            <p>Leave Record</p>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="pages/forms/advanced.html" class="nav-link">
+            <i class="far fa-circle nav-icon"></i>
+            <p>Apply Leave</p>
+          </a>
+        </li>
+      </ul>
+    </li>
+
+
+    {# Additional sections can be controlled similarly #}
+    {% if request.session.designation == "HR" or request.session.designation == "Manager"   %}
+    <li class="nav-item">
+      <a href="#" class="nav-link">
+        <i class="nav-icon fas fa-table"></i>
+        <p>
+          Config
+          <i class="fas fa-angle-left right"></i>
+        </p>
+      </a>
+      <ul class="nav nav-treeview">
+        <li class="nav-item">
+          <a href="{% url 'Emplist' %}" class="nav-link">
+            <i class="far fa-circle nav-icon"></i>
+            <p>Employee List</p>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="pages/tables/data.html" class="nav-link">
+            <i class="far fa-circle nav-icon"></i>
+            <p>Add Leaves</p>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="pages/tables/jsgrid.html" class="nav-link">
+            <i class="far fa-circle nav-icon"></i>
+            <p>Add Designation</p>
+          </a>
+        </li>
+      </ul>
+    </li>
+     {% endif %}
+
+    {# Logout button added at the bottom #}
+    <li class="nav-item mt-auto">
+      <a href="{% url 'Logout' %}" class="nav-link">
+        <i class="nav-icon fas fa-sign-out-alt"></i>
+        <p>Logout</p>
+      </a>
+    </li>
+
+
+  </ul>
+</nav>
+
     </div>
   </aside>

@@ -1,19 +1,28 @@
 import re
-
-from .models import EmployeeBISP
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages
-from django.contrib.auth.hashers import make_password
+import json
+from django.http import JsonResponse
+from django.contrib.auth.hashers import make_password, check_password
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from datetime import datetime
-  # Ensure Employee model is imported
+from django.contrib import messages
+from django.shortcuts import render
+from .models import EmployeeBISP  # Import your Employee model
+
+
+
+
 # Create your views here.
-
-def Admin(request):
-
+def Manager(request):
     return render(request,'admin_templates/index.html',)
+
+def Hr(request):
+    return render(request,'admin_templates/hr_dashboard.html',)
+
+def Employee(request):
+    return render(request,'admin_templates/Emp_dashboard.html',)
 
 def Profile(request):
     return render(request,'admin_templates/profile.html')
@@ -39,8 +48,11 @@ def Contact(request):
 def Register(request):
     return render(request,'admin_templates/register.html')
 
-
 def Login(request):
+    return render(request,'admin_templates/login.html')
+
+def Logout(request):
+    logout(request)
     return render(request,'admin_templates/login.html')
 
 def EmpList(request):
@@ -208,16 +220,7 @@ def update_employee(request, id):
 #
 #     return render(request, 'admin_templates/register.html',)
 
-import json
-import re
-from django.http import JsonResponse
-from django.contrib.auth.hashers import make_password
-from django.core.validators import validate_email
-from django.core.exceptions import ValidationError
-from datetime import datetime
-from django.contrib import messages
-from django.shortcuts import render
-from .models import EmployeeBISP  # Import your Employee model
+
 
 ALLOWED_DESIGNATIONS = ["Manager", "Developer", "HR", "Accountant"]
 MAX_DESIGNATION_LENGTH = 50
@@ -332,3 +335,49 @@ def register_user(request):
         return JsonResponse({"status": "success", "message": "Employee registered successfully!"})
 
     return render(request, 'admin_templates/register.html')
+
+#For Login
+from django.views.decorators.csrf import csrf_protect
+
+@csrf_protect
+def Login_user(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request"}, status=400)
+
+    email = request.POST.get("Email", "").strip()
+    password = request.POST.get("PWD", "").strip()
+
+    errors = {}
+    if not email:
+        errors["email_error"] = "Email is required."
+    if not password:
+        errors["password_error"] = "Password is required."
+    if errors:
+        return JsonResponse(errors, status=400)
+
+    user = EmployeeBISP.objects.filter(email=email).first()
+    if not user:
+        return JsonResponse({"email_error": "No account found with this email."}, status=401)
+
+    if not check_password(password, user.password):
+        return JsonResponse({"password_error": "Incorrect password."}, status=401)
+
+    # Set common session data
+    request.session['employee_name'] = user.name
+    request.session['designation'] = user.designation
+    try:
+        request.session['ProfileImage'] = user.profile_picture.url
+    except Exception:
+        request.session['ProfileImage'] = ""  # Fallback if no profile image is available
+
+    # Determine redirect URL based on the user's designation
+    if user.designation == "HR":
+        redirect_url = "/Hrpanel"
+    elif user.designation in ["Developer", "Accountant"]:
+        redirect_url = "/Emppanel"
+    elif user.designation == "Manager":
+        redirect_url = "/Adminpanel"
+    else:
+        return JsonResponse({"error": "Unauthorized role"}, status=403)
+
+    return JsonResponse({"redirect_url": redirect_url}, status=200)

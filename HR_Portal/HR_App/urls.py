@@ -2,7 +2,12 @@ from django.contrib import admin
 from django.urls import path, include
 from . import views
 urlpatterns = [
-      path('',views.Admin,name='Adminpanel'),
+      path('Adminpanel/',views.Manager,name='Adminpanel'),
+      path('Hrpanel/', views.Hr, name='Hrpanel'),
+      path('Emppanel/', views.Employee, name='Emppanel'),
+      path('', views.Login, name='Login'),
+      path('logout/', views.Logout, name='Logout'),
+      path('Login/user/', views.Login_user, name='Login_user'),
       path('profile/', views.Profile, name='Profile'),
       path('forget_pwd/',views.Forget_pwd,name='Forget_pwd'),
       path('project/',views.Project,name='project'),
