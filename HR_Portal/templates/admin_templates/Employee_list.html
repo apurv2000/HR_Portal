@@ -1,18 +1,23 @@
 {% extends 'base.html' %}
 {% load static %}
+
 {% block title %}Employee List{% endblock %}
+
 {% block content %}
 <div class="wrapper">
+
   <!-- Navbar -->
   <nav class="main-header navbar navbar-expand navbar-white navbar-light">
-    <!-- Left navbar links -->
     <ul class="navbar-nav">
+      <!-- Sidebar toggle button -->
       <li class="nav-item">
         <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
       </li>
+      <!-- Home link -->
       <li class="nav-item d-none d-sm-inline-block">
         <a href="{% url 'Adminpanel' %}" class="nav-link">Home</a>
       </li>
+      <!-- Contact link -->
       <li class="nav-item d-none d-sm-inline-block">
         <a href="{% url 'contact' %}" class="nav-link">Contact</a>
       </li>
@@ -20,37 +25,39 @@
   </nav>
   <!-- /.navbar -->
 
-  <!-- Main Sidebar Container -->
+  <!-- Sidebar -->
   {% include 'Side_Navbar.html' %}
 
-  <!-- Content Wrapper. Contains page content -->
+  <!-- Content Wrapper -->
   <div class="content-wrapper">
-    <!-- Content Header (Page header) -->
+
+    <!-- Page Header -->
     <section class="content-header">
       <div class="container-fluid">
         <div class="row mb-2">
           <div class="col-sm-6">
-            <h1>List Of Employee</h1>
+            <h1>List Of Employees</h1>
           </div>
           <div class="col-sm-6 text-right">
+            <!-- Button to add a new employee -->
             <a href="{% url 'register' %}" class="btn btn-primary">Add Employee</a>
           </div>
         </div>
       </div>
     </section>
 
-       <!--Error Message   -->
-       {% if messages %}
-        {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-          {{ message }}
+    <!-- Display messages (e.g., success, error) -->
+    {% if messages %}
+      {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
         <button type="button" class="close" data-bs-dismiss="alert" aria-label="Close">
-        <span aria-hidden="true">&times;</span>
+          <span aria-hidden="true">&times;</span>
         </button>
-        </div>
+      </div>
       {% endfor %}
-        {% endif %}
-        <!-- End -->
+    {% endif %}
+    <!-- End messages -->
 
     <!-- Main content -->
     <section class="content">
@@ -58,10 +65,13 @@
         <div class="row">
           <div class="col-12">
             <div class="card">
+              <!-- Card Header -->
               <div class="card-header">
                 <h3 class="card-title">Employee List</h3>
               </div>
               <!-- /.card-header -->
+
+              <!-- Card Body -->
               <div class="card-body" style="overflow-x: auto;">
                 <table id="example1" class="table table-bordered table-striped">
                   <thead>
@@ -85,11 +95,12 @@
                   <tbody>
                     {% for employee in employees %}
                     <tr>
+                      <!-- Employee Profile Image -->
                       <td>
                         {% if employee.profile_picture %}
-                           <img src="{{ employee.profile_picture.url }}" alt="Profile Image" style="width: 50px; height: 50px; border-radius: 50%;">
+                          <img src="{{ employee.profile_picture.url }}" alt="Profile Image" style="width: 50px; height: 50px; border-radius: 50%;">
                         {% else %}
-                            No Image
+                          No Image
                         {% endif %}
                       </td>
                       <td>{{ employee.name }}</td>
@@ -101,16 +112,16 @@
                       <td>{{ employee.nationality }}</td>
                       <td>{{ employee.permanent_address }}</td>
                       <td>{{ employee.current_address }}</td>
-                      <td>{{ employee.aadhar_card}}</td>
-                      <td>{{ employee.date_of_join}}</td>
+                      <td>{{ employee.aadhar_card }}</td>
+                      <td>{{ employee.date_of_join }}</td>
                       <td>{{ employee.work_location }}</td>
-                    <td>
-                      <div class="d-flex gap-3">
-                           <a href="{% url 'update_employee_page' employee.id %}" class="btn btn-warning">Update</a>
+                      <!-- Action Buttons -->
+                      <td>
+                        <div class="d-flex gap-3">
+                          <a href="{% url 'update_employee_page' employee.id %}" class="btn btn-warning">Update</a>
                           <a href="{% url 'delete_employee' employee.id %}" class="btn btn-danger" onclick="return confirm('Are you sure?');">Delete</a>
-                      </div>
-                    </td>
-
+                        </div>
+                      </td>
                     </tr>
                     {% endfor %}
                   </tbody>
@@ -128,15 +139,16 @@
     </section>
     <!-- /.content -->
   </div>
-
   <!-- /.content-wrapper -->
+
+  <!-- Footer -->
   <footer class="main-footer">
     <div class="float-right d-none d-sm-block">
       <b>Version</b> 3.1.0
     </div>
     <strong>Copyright &copy; 2014-2021 <a href="https://adminlte.io">AdminLTE.io</a>.</strong> All rights reserved.
   </footer>
+
 </div>
 <!-- ./wrapper -->
-
 {% endblock %}

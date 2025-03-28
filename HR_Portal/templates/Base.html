@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}{% endblock %}</title>
 
+
   <!-- Google Font: Source Sans Pro -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
   <!-- Font Awesome -->
@@ -31,19 +32,15 @@
   <link rel="stylesheet" href="{% static 'plugins/datatables-buttons/css/buttons.bootstrap4.min.css' %}">
   <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
   <!-- Statistics -->
-  <!--   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">-->
-  <!--    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">-->
   <link rel="stylesheet" href="{% static 'css/statistics.css' %}">
+
+
 </head>
 <body class="hold-transition sidebar-mini layout-fixed">
 {% block content %}
+
+
 {% endblock %}
-
-<!--<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>-->
-
-<!-- Bootstrap Bundle (includes Popper) -->
-<!--<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>-->
-
 <!-- jQuery -->
 <script src="{% static 'plugins/jquery/jquery.min.js' %}"></script>
 <!-- jQuery UI 1.11.4 -->
@@ -78,8 +75,6 @@
 <script src="{% static 'js/demo.js' %}"></script>
 <!-- AdminLTE dashboard demo (This is only for demo purposes) -->
 <script src="{% static 'js/pages/dashboard.js' %}"></script>
-
-<script src="{% static 'js/demo.js' %}"></script>
 <!--<script src="{% static 'plugins/bootstrap/js/bootstrap.bundle.min.js' %}"></script>-->
 <script src="{% static 'plugins/datatables/jquery.dataTables.min.js' %}"></script>
 <script src="{% static 'plugins/datatables-bs4/js/dataTables.bootstrap4.min.js' %}"></script>
@@ -94,11 +89,9 @@
 <script src="{% static 'plugins/datatables-buttons/js/buttons.print.min.js' %}"></script>
 <script src="{% static 'plugins/bs-custom-file-input/bs-custom-file-input.min.js' %}"></script>
 <script src="{% static 'plugins/datatables-buttons/js/buttons.colVis.min.js' %}"></script>
-<!-- jQuery (required for Bootstrap) -->
-
-
-
 <script>
+
+<!-- Datatable in Emplist -->
 $(document).ready(function () {
   if (!$.fn.DataTable.isDataTable("#employeeTable")) {
     $("#employeeTable").DataTable({
@@ -112,9 +105,7 @@ $(document).ready(function () {
   }
 });
 </script>
-
 <script>
-
 $(document).ready(function () {
     // Destroy DataTable if already initialized
     if ($.fn.DataTable.isDataTable('#example1')) {
@@ -141,16 +132,45 @@ $(function () {
   bsCustomFileInput.init();
 });
 </script>
+
+<!--Popup Message-->
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    var alerts = document.querySelectorAll('.alert-dismissible');
-    alerts.forEach(function (alert) {
-      alert.querySelector('.close').addEventListener('click', function () {
-        alert.style.display = 'none';
-      });
+$(document).ready(function(){
+    $("#registerForm").submit(function(event){
+        event.preventDefault();  // Prevent default form submission
+
+        let formData = new FormData(this);  // Get form data
+
+        $.ajax({
+            type: "POST",
+            url: "{% url 'register_user' %}",  // Django URL for form submission
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                if (response.status === "success") {
+                    alert(response.message);  // Success message
+                    window.location.href = "{% url 'Emplist' %}";  // Redirect to Employee list
+                }
+            },
+            error: function(xhr) {
+                let errors = xhr.responseJSON.errors;
+                $(".error-message").remove();  // Clear previous errors
+
+                $.each(errors, function(key, value) {
+                    let inputField = $("[name='" + key + "']");
+                    if (inputField.length) {
+                        inputField.after("<small class='text-danger error-message'>" + value + "</small>");
+                    }
+                });
+            }
+        });
     });
-  });
+});
 </script>
+
+
+
 
 </body>
 </html>
