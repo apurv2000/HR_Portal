@@ -1,5 +1,10 @@
+import os
+import random
 import re
+import string
+
 from django.contrib.auth import authenticate, login, logout
+from django.core.mail import send_mail
 from django.shortcuts import render, redirect, get_object_or_404
 import json
 from django.http import JsonResponse
@@ -9,7 +14,7 @@ from django.core.exceptions import ValidationError
 from datetime import datetime
 from django.contrib import messages
 from django.shortcuts import render
-from .models import EmployeeBISP  # Import your Employee model
+from .models import EmployeeBISP,Leave # Import your Employee model
 
 
 
@@ -53,6 +58,7 @@ def Login(request):
 
 def Logout(request):
     logout(request)
+
     return render(request,'admin_templates/login.html')
 
 def EmpList(request):
@@ -86,6 +92,7 @@ def update_employee(request, id):
         employee.date_of_join = request.POST['DOJ']
         employee.work_location = request.POST['workloc']
         employee.gender = request.POST['gender']
+        employee.department=request.POST['department']
 
         # Safely get the image file
         image = request.FILES.get("image")  # Using .get() prevents KeyError
@@ -221,8 +228,20 @@ def update_employee(request, id):
 #     return render(request, 'admin_templates/register.html',)
 
 
+#Validate Profile  Image
+def validate_profile_picture(profile_img):
+    if profile_img:
+        # Get file extension
+        ext = os.path.splitext(profile_img.name)[1].lower()
+        allowed_extensions = ['.jpg', '.jpeg', '.png']
+
+        if ext not in allowed_extensions:
+            return "Profile picture must be a .jpg or .png file."
+
+    return None  # No error
 
 ALLOWED_DESIGNATIONS = ["Manager", "Developer", "HR", "Accountant"]
+ALLOWED_DEPARTMENT = ["HR", "Marketing", "Sales", "Software"]
 MAX_DESIGNATION_LENGTH = 50
 
 def register_user(request):
@@ -242,6 +261,7 @@ def register_user(request):
         workloc = request.POST.get("workloc", '').strip()
         gender = request.POST.get("gender", '').strip()
         profile_img = request.FILES.get("image")
+        department=request.POST.get("Department", '').strip()
         update_id=request.POST.get("update_id")
         print(update_id)
 
@@ -264,6 +284,7 @@ def register_user(request):
 
         # Validate Email
         try:
+            email = email.lower()
             validate_email(email)
         except ValidationError:
             errors["Email"] = "Invalid email format."
@@ -299,12 +320,33 @@ def register_user(request):
         except ValueError:
             errors["DOJ"] = "Invalid Date of Joining format. Use YYYY-MM-DD."
 
+        # Validate Date of Birth (DOB)
+        try:
+            dob_date = datetime.strptime(dob, "%Y-%m-%d").date()
+            min_dob = datetime(1980, 1, 1).date()  # Set minimum DOB as January 1, 1980
+            if dob_date < min_dob:
+                errors["DOB"] = "Date of Birth must be on or after January 1, 1980"
+            elif dob_date > datetime.now().date():
+                errors["DOB"] = "Date of Birth must be less than present date"
+        except ValueError:
+            errors["DOB"] = "Invalid Date of Birth format. Use YYYY-MM-DD."
+
         # Validate Designation
         if designation not in ALLOWED_DESIGNATIONS:
             errors["Designation"] = f"Invalid designation. Allowed: {', '.join(ALLOWED_DESIGNATIONS)}"
 
+        # Validate Department
+        if department not in ALLOWED_DEPARTMENT:
+            errors["department"] = f"Invalid department. Allowed: {', '.join(ALLOWED_DEPARTMENT)}"
+
         if len(designation) > MAX_DESIGNATION_LENGTH:
             errors["Designation"] = f"Designation must be under {MAX_DESIGNATION_LENGTH} characters."
+
+        #Validate profile picture format
+        error_message = validate_profile_picture(profile_img)
+        if error_message:
+                errors["image"] = error_message
+
 
         # Return errors if found
         if errors:
@@ -328,6 +370,7 @@ def register_user(request):
             designation=designation,
             date_of_join=doj,
             work_location=workloc,
+            department=department,
             profile_picture=profile_img
         )
         user.save()
@@ -337,9 +380,6 @@ def register_user(request):
     return render(request, 'admin_templates/register.html')
 
 #For Login
-from django.views.decorators.csrf import csrf_protect
-
-@csrf_protect
 def Login_user(request):
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request"}, status=400)
@@ -365,6 +405,11 @@ def Login_user(request):
     # Set common session data
     request.session['employee_name'] = user.name
     request.session['designation'] = user.designation
+    request.session['total_leave'] = user.total_leave
+    request.session['availed_leave'] = user.availed_leave
+    request.session['remain_leave'] = user. remaining_leave
+    request.session['Currenttime'] =datetime.today().date().isoformat()
+
     try:
         request.session['ProfileImage'] = user.profile_picture.url
     except Exception:
@@ -381,3 +426,143 @@ def Login_user(request):
         return JsonResponse({"error": "Unauthorized role"}, status=403)
 
     return JsonResponse({"redirect_url": redirect_url}, status=200)
+
+
+
+def generate_random_password(length=8):
+    """Generate a random password of given length"""
+    characters = string.ascii_letters + string.digits
+    return ''.join(random.choice(characters) for i in range(length))
+
+#for Forgot Password
+def Forget_passord(request):
+    if request.method == "POST":
+        email = request.POST.get("Email")
+        user = EmployeeBISP.objects.filter(email=email).first()
+
+
+        if user:
+
+            # Generate a new simple password
+            new_password = generate_random_password()
+            user.password = make_password(new_password)  # Hash the new password
+            user.save()
+            # Logic to send a password reset email (Django's built-in system can be used)
+            send_mail(
+                "Password Reset Request",
+                f"your password is {new_password}.",
+                "noreply@example.com",
+                [email],
+                fail_silently=False,
+            )
+            messages.success(request, "A password reset email has been sent.")
+        else:
+            messages.error(request, "No account found with this email.")
+
+        return redirect("Forget_password")  # Redirect to the same page
+
+    return render(request, "admin_templates/forgot-password.html")
+
+
+
+# =======================================================================================================
+
+def leave_Add_page(request):
+
+    return render(request,'leave_templates/leave_add.html')
+
+def Apply_leave(request):
+    errors = {}
+    employee = None
+
+    if request.method == "POST":
+        name = request.POST.get("name", "").strip()
+        leavetype = request.POST.get("leavetype", "").strip()
+        fromdate = request.POST.get("fromdate", "").strip()
+        tilldate = request.POST.get("tilldate", "").strip()
+        reason = request.POST.get("reason", "").strip()
+        file = request.FILES.get("file")
+
+        # Name Validation
+        try:
+            employee = EmployeeBISP.objects.get(name=name)
+        except EmployeeBISP.DoesNotExist:
+            errors["name"] = "Employee not found."
+            employee = None
+
+        # Ensure employee exists before accessing attributes
+        remaining_leave = 0
+        if employee:
+            try:
+                leave_record = Leave.objects.filter(employee=employee).latest('start_date')
+                remaining_leave = leave_record.remaining_leave if leave_record.remaining_leave is not None else 0
+            except Leave.DoesNotExist:
+                remaining_leave = 0
+
+        # Leave Type Validation
+        if not leavetype:
+            errors["leavetype"] = "Please select a leave type."
+
+        # Date Validation
+        from_date, till_date = None, None  # Initialize before try block
+        if not fromdate or not tilldate:
+            errors["date"] = "Both start and end dates are required."
+        else:
+            try:
+                from_date = datetime.strptime(fromdate, "%Y-%m-%d").date()
+                till_date = datetime.strptime(tilldate, "%Y-%m-%d").date()
+
+                if from_date > till_date:
+                    errors["fromdate"] = "Start date cannot be after end date."
+            except ValueError:
+                errors["date"] = "Invalid date format. Use YYYY-MM-DD."
+
+        # Reason Validation
+        if not reason:
+            errors["reason"] = "Reason is required."
+
+        # Leave Calculation
+        if from_date and till_date:
+            leave_days = (till_date - from_date).days + 1
+        else:
+            leave_days = 0  #  Prevents errors if dates are invalid
+
+        if employee and remaining_leave is not None and leave_days > remaining_leave:
+            errors["leave"] = f"Insufficient leave balance! You have {remaining_leave} days left."
+
+        # File Validation
+        if file:
+            allowed_extensions = ["pdf", "jpeg", "jpg", "png"]
+            file_extension = file.name.split(".")[-1].lower()
+            if file_extension not in allowed_extensions:
+                errors["file"] = "Invalid file type. Only PDF, JPEG, JPG, and PNG allowed."
+            if file.size > 2 * 1024 * 1024:
+                errors["file"] = "File size must be less than 2MB."
+
+        if errors:
+            return render(request, "leave_templates/leave_add.html", {"errors": errors})
+
+        # ✅ DEBUG: Print before saving
+        print(f"Saving leave: {employee}, Days: {leave_days}, Remaining: {remaining_leave}")
+
+        # Ensure employee exists before saving
+        if employee:
+            employee.availed_leave += leave_days
+            employee.remaining_leave -= leave_days
+            employee.save()
+
+            # Save Leave Record
+            Leave.objects.create(
+                employee=employee,
+                leave_type=leavetype,
+                start_date=from_date,
+                end_date=till_date,
+                reason=reason,
+                status="Pending",
+                attachment=file
+            )
+
+            messages.success(request, "Leave application submitted successfully!")
+            return redirect("leaveAdd")
+
+    return render(request, "Hrpanel.html")

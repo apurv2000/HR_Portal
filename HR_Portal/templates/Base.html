@@ -8,6 +8,8 @@
 
 
   <!-- Google Font: Source Sans Pro -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
   <!-- Font Awesome -->
   <link rel="stylesheet" href="{% static 'plugins/fontawesome-free/css/all.min.css' %}">
@@ -33,7 +35,18 @@
   <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
   <!-- Statistics -->
   <link rel="stylesheet" href="{% static 'css/statistics.css' %}">
-
+   <!--For Leave_Add -->
+     <style>
+        .container {
+            margin-top: 30px;
+        }
+        .card-header {
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+        }
+        label { font-weight: bold; }
+    </style>
 
 </head>
 <body class="hold-transition sidebar-mini layout-fixed">
@@ -139,6 +152,8 @@ $(document).ready(function(){
     $("#registerForm").submit(function(event){
         event.preventDefault();  // Prevent default form submission
 
+         $(".error-message").remove();  // Clear previous errors before submission
+
         let formData = new FormData(this);  // Get form data
 
         $.ajax({
@@ -238,6 +253,8 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 </script>
+
+
 
 </body>
 </html>

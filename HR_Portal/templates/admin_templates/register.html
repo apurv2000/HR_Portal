@@ -75,6 +75,12 @@
             </div>
 
             <div class="col-md-4">
+              <label for="designation">Department <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="department" name="Department"
+                     value="{{ employee.department|default:'' }}" placeholder="Enter designation" required>
+            </div>
+
+            <div class="col-md-4">
               <label for="permanentAddress">Permanent Address <span class="text-danger">*</span></label>
               <input type="text" class="form-control" id="permanentAddress" name="Per_Address"
                      value="{{ employee.permanent_address|default:'' }}" placeholder="Enter permanent address" required>

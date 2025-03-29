@@ -62,6 +62,7 @@
     {% endif %}
 
     {# Common navigation items that appear for all users #}
+      <!--Project and Task-->
     <li class="nav-item">
       <a href="pages/widgets.html" class="nav-link">
         <i class="nav-icon fas fa-th"></i>
@@ -74,97 +75,64 @@
         <p>Task</p>
       </a>
     </li>
-     <li class="nav-item">
-       <a href="#" class="nav-link">
-         <i class="nav-icon fas fa-tree"></i>
-              <p>
-                Timesheet
-                <i class="fas fa-angle-left right"></i>
-              </p>
-            </a>
-            <ul class="nav nav-treeview">
-              <li class="nav-item">
-                <a href="pages/UI/general.html" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>General</p>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a href="pages/UI/icons.html" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Icons</p>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a href="pages/UI/buttons.html" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Buttons</p>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a href="pages/UI/sliders.html" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Sliders</p>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a href="pages/UI/modals.html" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Modals & Alerts</p>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a href="pages/UI/navbar.html" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Navbar & Tabs</p>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a href="pages/UI/timeline.html" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Timeline</p>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a href="pages/UI/ribbons.html" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Ribbons</p>
-                </a>
-              </li>
-            </ul>
-     </li>
+     <!--Timesheet-->
     <li class="nav-item">
       <a href="#" class="nav-link">
-        <i class="nav-icon fas fa-edit"></i>
-        <p>
-          Leave
-          <i class="fas fa-angle-left right"></i>
-        </p>
+          <i class="nav-icon fas fa-tree"></i>
+          <p>
+              Timesheet
+              <i class="fas fa-angle-left right"></i>
+          </p>
       </a>
       <ul class="nav nav-treeview">
-        <li class="nav-item">
-          <a href="pages/forms/general.html" class="nav-link">
-            <i class="far fa-circle nav-icon"></i>
-            <p>Leave Record</p>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a href="pages/forms/advanced.html" class="nav-link">
-            <i class="far fa-circle nav-icon"></i>
-            <p>Apply Leave</p>
-          </a>
-        </li>
-      </ul>
-    </li>
+          <!-- Team Record -->
+          {% if request.session.designation == "HR"%}
+          <li class="nav-item">
+              <a href="#" class="nav-link">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>
+                      Team Record
+                      <i class="fas fa-angle-left right"></i>
+                  </p>
+              </a>
+              <ul class="nav nav-treeview">
+                  <li class="nav-item">
+                      <a href="pages/UI/icons.html" class="nav-link">
+                          <i class="fas fa-arrow-right"></i>
+                          <p>Timesheet</p>
+                      </a>
+                  </li>
+                  <li class="nav-item">
+                      <a href="pages/UI/buttons.html" class="nav-link">
+                          <i class="fas fa-arrow-right"></i>
+                          <p>Image Timesheet</p> <!-- Now under Team Record -->
+                      </a>
+                  </li>
+              </ul>
+          </li>
+        {% endif%}
+          <!-- Other Timesheet Items -->
+          <li class="nav-item">
+              <a href="pages/UI/sliders.html" class="nav-link">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>Record</p>
+              </a>
+          </li>
+          <li class="nav-item">
+              <a href="pages/UI/modals.html" class="nav-link">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>Add Daily Record</p>
+              </a>
+          </li>
 
-
-    {# Additional sections can be controlled similarly #}
-    {% if request.session.designation == "HR" or request.session.designation == "Manager"   %}
-    <li class="nav-item">
+       </ul>
+   </li>
+    <!--Leave-->
+      <li class="nav-item">
       <a href="#" class="nav-link">
-        <i class="nav-icon fas fa-table"></i>
+        <i class="nav-icon fas fa-calendar"></i>
         <p>
-          Config
+         Leave
           <i class="fas fa-angle-left right"></i>
         </p>
       </a>
@@ -172,22 +140,165 @@
         <li class="nav-item">
           <a href="{% url 'Emplist' %}" class="nav-link">
             <i class="far fa-circle nav-icon"></i>
-            <p>Employee List</p>
+            <p>Leave Record</p>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="{% url 'leaveAdd' %}" class="nav-link">
+            <i class="far fa-circle nav-icon"></i>
+            <p>Apply Leave</p>
+          </a>
+      </li>
+          {% if request.session.designation == "HR" %}
+            <li class="nav-item">
+             <a href="pages/tables/data.html" class="nav-link">
+            <i class="far fa-circle nav-icon"></i>
+                <p>Team Leave Record</p>
+             </a>
+            </li>
+            {% endif %}
+      </ul>
+      </li>
+
+
+      <!--Report-->
+    {# Additional sections can be controlled similarly #}
+    {% if request.session.designation == "HR"%}
+    <li class="nav-item">
+      <a href="#" class="nav-link">
+        <i class="nav-icon fas fa-bars"></i>
+        <p>
+          Report
+          <i class="fas fa-angle-left right"></i>
+        </p>
+      </a>
+      <ul class="nav nav-treeview">
+        <li class="nav-item">
+          <a href="{% url 'Emplist' %}" class="nav-link">
+            <i class="far fa-circle nav-icon"></i>
+            <p>Leave Report</p>
           </a>
         </li>
         <li class="nav-item">
           <a href="pages/tables/data.html" class="nav-link">
             <i class="far fa-circle nav-icon"></i>
-            <p>Add Leaves</p>
+            <p>WFH Report</p>
           </a>
         </li>
         <li class="nav-item">
           <a href="pages/tables/jsgrid.html" class="nav-link">
             <i class="far fa-circle nav-icon"></i>
-            <p>Add Designation</p>
+            <p>Attandence Report</p>
+          </a>
+        </li>
+         <li class="nav-item">
+          <a href="pages/tables/jsgrid.html" class="nav-link">
+            <i class="far fa-circle nav-icon"></i>
+            <p>Handbook Report</p>
+          </a>
+        </li>
+         <li class="nav-item">
+          <a href="pages/tables/jsgrid.html" class="nav-link">
+            <i class="far fa-circle nav-icon"></i>
+            <p>Employee Report</p>
+          </a>
+        </li>
+         <li class="nav-item">
+          <a href="pages/tables/jsgrid.html" class="nav-link">
+            <i class="far fa-circle nav-icon"></i>
+            <p>Exit Report</p>
+          </a>
+        </li>
+         <li class="nav-item">
+          <a href="pages/tables/jsgrid.html" class="nav-link">
+            <i class="far fa-circle nav-icon"></i>
+            <p>Investment Report</p>
+          </a>
+        </li>
+         <li class="nav-item">
+          <a href="pages/tables/jsgrid.html" class="nav-link">
+            <i class="far fa-circle nav-icon"></i>
+            <p>Sabbatical Report</p>
           </a>
         </li>
       </ul>
+    </li>
+     {% endif %}
+
+
+      <!--Configuration-->
+    {# Additional sections can be controlled similarly #}
+    {% if request.session.designation == "HR" or request.session.designation == "Manager"   %}
+    <li class="nav-item">
+      <a href="#" class="nav-link">
+        <i class="nav-icon fas fa-gear"></i>
+        <p>
+          Configuration
+          <i class="fas fa-angle-left right"></i>
+        </p>
+      </a>
+      <ul class="nav nav-treeview">
+        <li class="nav-item">
+          <a href="{% url 'Emplist' %}" class="nav-link">
+            <i class="far fa-circle nav-icon"></i>
+            <p>Employee</p>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="pages/tables/data.html" class="nav-link">
+            <i class="far fa-circle nav-icon"></i>
+            <p>Leave</p>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="pages/tables/jsgrid.html" class="nav-link">
+            <i class="far fa-circle nav-icon"></i>
+            <p>Payroll Setting</p>
+          </a>
+        </li>
+          <li class="nav-item">
+          <a href="pages/tables/jsgrid.html" class="nav-link">
+            <i class="far fa-circle nav-icon"></i>
+            <p>Employee Salary</p>
+          </a>
+        </li>
+          <li class="nav-item">
+          <a href="pages/tables/jsgrid.html" class="nav-link">
+            <i class="far fa-circle nav-icon"></i>
+            <p>Holiday</p>
+          </a>
+        </li>
+          <li class="nav-item">
+          <a href="pages/tables/jsgrid.html" class="nav-link">
+            <i class="far fa-circle nav-icon"></i>
+            <p>Upload Handbook</p>
+          </a>
+        </li>
+         <li class="nav-item">
+          <a href="pages/tables/jsgrid.html" class="nav-link">
+            <i class="far fa-circle nav-icon"></i>
+            <p>Assets</p>
+          </a>
+        </li>
+      </ul>
+    </li>
+    <li class="nav-item mt-auto">
+      <a href="{% url 'Logout' %}" class="nav-link">
+        <i class="nav-icon fas fa-user"></i>
+        <p>Employee Salary</p>
+      </a>
+    </li>
+     <li class="nav-item mt-auto">
+      <a href="{% url 'Logout' %}" class="nav-link">
+        <i class="nav-icon fas fa-file-alt"></i>
+        <p>Handbook PDF</p>
+      </a>
+    </li>
+     <li class="nav-item mt-auto">
+      <a href="{% url 'Logout' %}" class="nav-link">
+        <i class="nav-icon fab fa-youtube"></i>
+        <p>Learning Video</p>
+      </a>
     </li>
      {% endif %}
 

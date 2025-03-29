@@ -10,6 +10,7 @@ urlpatterns = [
       path('Login/user/', views.Login_user, name='Login_user'),
       path('profile/', views.Profile, name='Profile'),
       path('forget_pwd/',views.Forget_pwd,name='Forget_pwd'),
+      path('forget_password/method/',views.Forget_passord,name='Forget_password'),
       path('project/',views.Project,name='project'),
       path('project_add/',views.Project_add,name="project_add"),
       path('project_detail/',views.Project_detail,name='project_detail'),
@@ -21,5 +22,7 @@ urlpatterns = [
       path('delete/<int:id>/', views.delete_employee, name='delete_employee'),
       path('update/<int:id>/', views.update_emp_page, name='update_employee_page'),
       path('update2/<int:id>/', views.update_employee, name='update_employee'),
+      path('leave/apply/page',views.leave_Add_page,name="leaveAdd"),
+      path('leave/apply/', views.Apply_leave, name="applyleave")
 
 ]
