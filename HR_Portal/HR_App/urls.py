@@ -23,6 +23,7 @@ urlpatterns = [
       path('update/<int:id>/', views.update_emp_page, name='update_employee_page'),
       path('update2/<int:id>/', views.update_employee, name='update_employee'),
       path('leave/apply/page',views.leave_Add_page,name="leaveAdd"),
-      path('leave/apply/', views.Apply_leave, name="applyleave")
+      path('leave/apply/', views.Apply_leave, name="applyleave"),
+      path('leave/list/',views.Leave_list,name="Leavelist")
 
 ]

@@ -1,6 +1,7 @@
 {% extends 'base.html' %}  <!-- Extends the base template -->
 {% load static %}  <!-- Loads static files for images, CSS, etc. -->
 {% block title  %} Leave Apply {% endblock %}  <!-- Sets the page title -->
+
 {% block content %}
 <div class="wrapper">
 
@@ -11,7 +12,6 @@
 
   <!-- Navbar -->
   <nav class="main-header navbar navbar-expand navbar-white navbar-light">
-    <!-- Left navbar links -->
     <ul class="navbar-nav">
       <li class="nav-item">
         <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
@@ -24,9 +24,7 @@
       </li>
     </ul>
 
-    <!-- Right navbar links -->
     <ul class="navbar-nav ml-auto">
-      <!-- Navbar Search -->
       <li class="nav-item">
         <a class="nav-link" data-widget="navbar-search" href="#" role="button">
           <i class="fas fa-search"></i>
@@ -48,7 +46,6 @@
         </div>
       </li>
 
-      <!-- Messages Dropdown Menu -->
       <li class="nav-item dropdown">
         <a class="nav-link" data-toggle="dropdown" href="#">
           <i class="far fa-comments"></i>
@@ -56,7 +53,6 @@
         </a>
         <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
           <a href="#" class="dropdown-item">
-            <!-- Message Start -->
             <div class="media">
               <img src="{% static 'img/user1-128x128.jpg' %}" alt="User Avatar" class="img-size-50 mr-3 img-circle">
               <div class="media-body">
@@ -68,11 +64,9 @@
                 <p class="text-sm text-muted"><i class="far fa-clock mr-1"></i> 4 Hours Ago</p>
               </div>
             </div>
-            <!-- Message End -->
           </a>
           <div class="dropdown-divider"></div>
           <a href="#" class="dropdown-item">
-            <!-- Message Start -->
             <div class="media">
               <img src="{% static 'img/user8-128x128.jpg' %}" alt="User Avatar" class="img-size-50 img-circle mr-3">
               <div class="media-body">
@@ -84,11 +78,9 @@
                 <p class="text-sm text-muted"><i class="far fa-clock mr-1"></i> 4 Hours Ago</p>
               </div>
             </div>
-            <!-- Message End -->
           </a>
           <div class="dropdown-divider"></div>
           <a href="#" class="dropdown-item">
-            <!-- Message Start -->
             <div class="media">
               <img src="{% static 'img/user3-128x128.jpg' %}" alt="User Avatar" class="img-size-50 img-circle mr-3">
               <div class="media-body">
@@ -100,13 +92,12 @@
                 <p class="text-sm text-muted"><i class="far fa-clock mr-1"></i> 4 Hours Ago</p>
               </div>
             </div>
-            <!-- Message End -->
           </a>
           <div class="dropdown-divider"></div>
           <a href="#" class="dropdown-item dropdown-footer">See All Messages</a>
         </div>
       </li>
-      <!-- Notifications Dropdown Menu -->
+
       <li class="nav-item dropdown">
         <a class="nav-link" data-toggle="dropdown" href="#">
           <i class="far fa-bell"></i>
@@ -133,11 +124,13 @@
           <a href="#" class="dropdown-item dropdown-footer">See All Notifications</a>
         </div>
       </li>
+
       <li class="nav-item">
         <a class="nav-link" data-widget="fullscreen" href="#" role="button">
           <i class="fas fa-expand-arrows-alt"></i>
         </a>
       </li>
+
       <li class="nav-item">
         <a class="nav-link" data-widget="control-sidebar" data-slide="true" href="#" role="button">
           <i class="fas fa-th-large"></i>
@@ -145,7 +138,7 @@
       </li>
     </ul>
   </nav>
-  <!-- /.navbar -->
+
   {% include 'Side_Navbar.html' %}
 
   <!-- Content Wrapper. Contains page content -->
@@ -156,174 +149,158 @@
         <div class="row mb-2">
           <div class="col-sm-6">
             <h1 class="m-0">Dashboard</h1>
-          </div><!-- /.col -->
+          </div>
           <div class="col-sm-6">
             <ol class="breadcrumb float-sm-right">
               <li class="breadcrumb-item"><a href="#">Home</a></li>
               <li class="breadcrumb-item active">HR Panel</li>
             </ol>
-          </div><!-- /.col -->
-        </div><!-- /.row -->
-      </div><!-- /.container-fluid -->
+          </div>
+        </div>
+      </div>
     </div>
-    <!-- /.content-header -->
 
     <!-- Main content -->
-    <!--Pop message-->
-      {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-        {% endfor %}
-      {% endif %}
-    <!--End-->
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+      {% endfor %}
+    {% endif %}
+
     <section class="content">
       <div class="container">
         <div class="row">
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">Leave Detail</div>
-                    <div class="card-body">
-                        <table class="table table-bordered">
-                            <thead>
-                                <tr>
-                                    <th>Type</th>
-                                    <th>CL</th>
-                                    <th>LWP</th>
-                                    <th>Special Leave</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>Total</td>
-                                    <td>{{request.session.total_leave}}</td>
-                                    <td>0</td>
-                                    <td>0</td>
-                                </tr>
-                                <tr>
-                                    <td>Availed</td>
-                                    <td>{{request.session.availed_leave}}</td>
-                                    <td>0</td>
-                                    <td>0</td>
-                                </tr>
-                                <tr>
-                                    <td>Balance</td>
-                                    <td>{{ request.session.remain_leave}}</td>
-                                    <td>0</td>
-                                    <td>0</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header">Leave Detail</div>
+              <div class="card-body">
+                <table class="table table-bordered">
+                  <thead>
+                    <tr>
+                      <th>Type</th>
+                      <th>CL</th>
+                      <th>LWP</th>
+                      <th>Special Leave</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Total</td>
+                      <td>{{request.session.total_leave}}</td>
+                      <td>0</td>
+                      <td>0</td>
+                    </tr>
+                    <tr>
+                      <td>Availed</td>
+                      <td>{{request.session.availed_leave}}</td>
+                      <td>0</td>
+                      <td>0</td>
+                    </tr>
+                    <tr>
+                      <td>Balance</td>
+                      <td>{{ request.session.remain_leave}}</td>
+                      <td>0</td>
+                      <td>0</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">Leave Form</div>
-                    <div class="card-body">
-                        <form method="post" action="{% url 'applyleave' %}" enctype="multipart/form-data">
-                        {% csrf_token %}
+          </div>
 
-                        <!-- Name Field (Disabled) -->
-                        <div class="mb-3">
-                            <label>Name:</label>
-                            <input type="text" class="form-control" name="name" value="{{request.session.employee_name}}" disabled>
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header">Leave Form</div>
+              <div class="card-body">
+            <form method="post" action="{% url 'applyleave' %}" enctype="multipart/form-data" id="leave-form">
+                  {% csrf_token %}
 
-                        </div>
+                  <!-- Employee Name -->
+                  <div class="mb-3">
+                      <label>Name:</label>
+                      <input type="text" class="form-control" name="name" value="{{ request.session.employee_name }}" readonly>
+                      <div id="error-name" class="text-danger"></div>
+                  </div>
 
-                        <!-- Apply Date (Disabled) -->
-                        <div class="mb-3">
-                            <label>Apply Date:</label>
-                            <input type="text" class="form-control" name="applydate" value="{{request.session.Currenttime}}" disabled>
-                            {% if errors.applydate %}
-                                <p style="color: red;">{{ errors.applydate }}</p>
-                            {% endif %}
-                        </div>
+                  <!-- Apply Date -->
+                  <div class="mb-3">
+                      <label>Apply Date:</label>
+                      <input type="text" class="form-control" name="applydate" value="{{ request.session.Currenttime }}" readonly>
+                      <div id="error-applydate" class="text-danger"></div>
+                  </div>
 
-                            <!-- Remain Leave (Disabled) -->
-                       <div class="mb-3">
-                           <label>Remaining Leave:</label>
-                            <input type="text" class="form-control" name="remainleave" value="{{request.session.remain_leave}}" readonly>
-                        </div>
+                  <!-- Remaining Leave -->
+                  <div class="mb-3">
+                      <label>Remaining Leave:</label>
+                      <input type="text" class="form-control" name="remainleave" value="{{ request.session.remain_leave }}" readonly>
+                      <div id="error-remainingleave" class="text-danger"></div>
+                  </div>
 
-                        <!-- Leave Type Dropdown -->
-                        <div class="mb-3">
-                            <label>Leave Type:</label>
-                            <select class="form-control" name="leavetype">
-                                <option value="" disabled selected>Select Leave</option>
-                                <option value="Sick">Sick Leave</option>
-                                <option value="Casual">Casual Leave</option>
-                                <option value="Annual">Annual Leave</option>
-                                <option value="Maternity">Maternity Leave</option>
-                            </select>
-                            {% if errors.leavetype %}
-                                <p style="color: red;">{{ errors.leavetype }}</p>
-                            {% endif %}
-                        </div>
+                  <!-- Leave Type -->
+                  <div class="mb-3">
+                      <label>Leave Type:</label>
+                      <select class="form-control" name="leavetype">
+                          <option value="" disabled selected>Select Leave</option>
+                          <option value="Sick">Sick Leave</option>
+                          <option value="Casual">Casual Leave</option>
+                          <option value="Annual">Annual Leave</option>
+                          <option value="Maternity">Maternity Leave</option>
+                      </select>
+                      <div id="error-leavetype" class="text-danger"></div>
+                  </div>
 
-                        <!-- From Date -->
-                        <div class="mb-3">
-                            <label>From Date:</label>
-                            <input type="date" name="fromdate" class="form-control">
-                            {% if errors.fromdate %}
-                                <p style="color: red;">{{ errors.fromdate }}</p>
-                            {% endif %}
-                        </div>
+                  <!-- From Date -->
+                  <div class="mb-3">
+                      <label>From Date:</label>
+                      <input type="date" name="fromdate" class="form-control">
+                      <div id="error-fromdate" class="text-danger"></div>
+                  </div>
 
-                        <!-- Till Date -->
-                        <div class="mb-3">
-                            <label>Till Date:</label>
-                            <input type="date" name="tilldate" class="form-control">
-                            {% if errors.tilldate %}
-                                <p style="color: red;">{{ errors.tilldate }}</p>
-                            {% endif %}
-                        </div>
+                  <!-- Till Date -->
+                  <div class="mb-3">
+                      <label>Till Date:</label>
+                      <input type="date" name="tilldate" class="form-control">
+                      <div id="error-date" class="text-danger"></div>
+                      <div id="error-leave" class="text-danger"></div>
+                  </div>
 
-                        <!-- Half Day & Compensatory Off -->
-                        <div class="mb-3">
-                            <input type="checkbox" name="halfday"> Half Day
-                            <input type="checkbox" name="compensatory_off"> Compensatory Off
-                        </div>
+                  <!-- Half Day and Compensatory Off -->
+                  <div class="mb-3">
+                      <input type="checkbox" name="halfday"> Half Day
+                      <input type="checkbox" name="compensatory_off"> Compensatory Off
+                  </div>
 
-                        <!-- Reason -->
-                        <div class="mb-3">
-                            <label>Reason:</label>
-                            <textarea name="reason" class="form-control"></textarea>
-                            {% if errors.reason %}
-                                <p style="color: red;">{{ errors.reason }}</p>
-                            {% endif %}
-                        </div>
+                  <!-- Reason -->
+                  <div class="mb-3">
+                      <label>Reason:</label>
+                      <textarea name="reason" class="form-control"></textarea>
+                      <div id="error-reason" class="text-danger"></div>
+                  </div>
 
-                        <!-- Attachment Upload -->
-                        <div class="mb-3">
-                            <label>Attachment:</label>
-                            <input type="file" class="form-control" name="file">
-                            <small class="text-danger">(pdf, jpeg, png file only, max 2MB)</small>
-                            {% if errors.file %}
-                                <p style="color: red;">{{ errors.file }}</p>
-                            {% endif %}
-                        </div>
+                  <!-- Attachment -->
+                  <div class="mb-3">
+                      <label>Attachment:</label>
+                      <input type="file" class="form-control" name="file">
+                      <div id="error-file" class="text-danger"></div>
+                      <small class="text-danger">(Only PDF, JPEG, PNG, max 2MB)</small>
+                  </div>
 
-                        <!-- Submit Button -->
-                        <button type="submit" class="btn btn-primary">Submit</button>
-                    </form>
-
-                    </div>
-                </div>
+                  <button type="submit" class="btn btn-primary">Submit</button>
+              </form>
+                <div id="error-messages" class="d-none"></div>  <!-- Optional error message container -->
+              </div>
             </div>
+          </div>
         </div>
-    </div>
-
-
-
+      </div>
     </section>
-    <!-- /.content -->
   </div>
-  <!-- /.content-wrapper -->
+
   <footer class="main-footer">
     <strong>Copyright &copy; 2025 <a href="https://adminlte.io">BISP</a>.</strong>
     All rights reserved.
@@ -332,12 +309,5 @@
     </div>
   </footer>
 
-  <!-- Control Sidebar -->
-  <aside class="control-sidebar control-sidebar-dark">
-    <!-- Control sidebar content goes here -->
-  </aside>
-  <!-- /.control-sidebar -->
 </div>
-<!-- ./wrapper -->
-
 {% endblock %}

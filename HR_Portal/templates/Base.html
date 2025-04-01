@@ -1,6 +1,7 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+<html lang="en" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html"
+      xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -102,8 +103,53 @@
 <script src="{% static 'plugins/datatables-buttons/js/buttons.print.min.js' %}"></script>
 <script src="{% static 'plugins/bs-custom-file-input/bs-custom-file-input.min.js' %}"></script>
 <script src="{% static 'plugins/datatables-buttons/js/buttons.colVis.min.js' %}"></script>
-<script>
 
+<!--Pop message for leave-->
+<script>
+    $(document).ready(function () {
+        $('#leave-form').submit(function (e) {
+            e.preventDefault(); // Prevent the default form submission
+
+            // Clear previous error messages
+            $('.text-danger').text('');
+
+            // Create FormData object to send the form data
+            var formData = new FormData(this);
+
+            // Get CSRF token from the page
+            var csrf_token = $('input[name="csrfmiddlewaretoken"]').val();
+
+            // Make AJAX request
+            $.ajax({
+                type: "POST",
+                url: "{% url 'applyleave' %}",
+                data: formData,
+                processData: false,  // Prevent jQuery from processing the data
+                contentType: false,  // Prevent jQuery from setting contentType
+                headers: {
+                    'X-CSRFToken': csrf_token  // Include the CSRF token in the request header
+                },
+                success: function (response) {
+                    if (response.status == 'success') {
+                        alert(response.message); // Show success message
+                        $('#leave-form')[0].reset(); // Reset the form
+                    }
+                },
+                error: function (xhr) {
+                    // Handle validation errors
+                    var errors = xhr.responseJSON.errors;
+
+                    // Loop through the errors and display them next to the respective fields
+                    $.each(errors, function (field, message) {
+                        $('#error-' + field).text(message);
+                    });
+                }
+            });
+        });
+    });
+</script>
+
+<script>
 <!-- Datatable in Emplist -->
 $(document).ready(function () {
   if (!$.fn.DataTable.isDataTable("#employeeTable")) {
@@ -148,23 +194,27 @@ $(function () {
 
 <!--Popup Message for Registeration form-->
 <script>
-$(document).ready(function(){
-    $("#registerForm").submit(function(event){
+$(document).ready(function() {
+    $("#registerForm").submit(function(event) {
         event.preventDefault();  // Prevent default form submission
 
-         $(".error-message").remove();  // Clear previous errors before submission
+        $(".error-message").remove();  // Clear previous errors before submission
 
         let formData = new FormData(this);  // Get form data
 
+        // Dynamically determine the correct URL based on whether it's an update or a registration
+        let actionUrl = $("#registerForm").attr("action");
+
         $.ajax({
             type: "POST",
-            url: "{% url 'register_user' %}",  // Django URL for form submission
+            url: actionUrl,  // Use the action URL from the form
             data: formData,
             processData: false,
             contentType: false,
             success: function(response) {
                 if (response.status === "success") {
                     alert(response.message);  // Success message
+                    window.location.href = "{% url 'Emplist' %}";  // Redirect to employee list page (or another page as needed)
                 }
             },
             error: function(xhr) {
@@ -182,6 +232,8 @@ $(document).ready(function(){
     });
 });
 </script>
+
+
 
 <!--Pop message for Login page-->
 <script>
