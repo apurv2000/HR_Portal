@@ -4,26 +4,6 @@
 {% block title %}Employee List{% endblock %} <!-- Sets the page title -->
 
 {% block content %}
-<div class="wrapper">
-
-  <!-- Navbar -->
-  <nav class="main-header navbar navbar-expand navbar-white navbar-light">
-    <ul class="navbar-nav">
-      <!-- Sidebar toggle button -->
-      <li class="nav-item">
-        <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
-      </li>
-      <!-- Home link -->
-      <li class="nav-item d-none d-sm-inline-block">
-        <a href="{% url 'Adminpanel' %}" class="nav-link">Home</a>
-      </li>
-      <!-- Contact link -->
-      <li class="nav-item d-none d-sm-inline-block">
-        <a href="{% url 'contact' %}" class="nav-link">Contact</a>
-      </li>
-    </ul>
-  </nav>
-  <!-- /.navbar -->
 
   <!-- Sidebar -->
   {% include 'Side_Navbar.html' %}
@@ -36,11 +16,11 @@
       <div class="container-fluid">
         <div class="row mb-2">
           <div class="col-sm-6">
-            <h1>List Of Employees</h1>
+            <h1>Leave Record</h1>
           </div>
           <div class="col-sm-6 text-right">
             <!-- Button to add a new employee -->
-            <a href="{% url 'register' %}" class="btn btn-primary">Add Employee</a>
+<!--            <a href="{% url 'register' %}" class="btn btn-primary">Add Employee</a>-->
           </div>
         </div>
       </div>
@@ -67,69 +47,77 @@
             <div class="card">
               <!-- Card Header -->
               <div class="card-header">
-                <h3 class="card-title">Employee List</h3>
+                <h3 class="card-title">Record</h3>
               </div>
               <!-- /.card-header -->
 
               <!-- Card Body -->
               <div class="card-body" style="overflow-x: auto;">
-                <table id="example1" class="table table-bordered table-striped">
-                  <thead>
+              <table id="example1" class="table table-bordered table-striped">
+                <thead>
                     <tr>
-                      <th>Profile Image</th>
-                      <th>Name</th>
+
+                      <th>Employee</th>
                       <th>Role</th>
                       <th>Designation</th>
-                      <th>DOB</th>
-                      <th>Email</th>
-                      <th>Phone</th>
                       <th>Department</th>
-                      <th>Gender</th>
-                      <th>Nationality</th>
-                      <th>Permanent Address</th>
-                      <th>Current Address</th>
-                      <th>Aadhar Number</th>
-                      <th>Date Of Joining</th>
-                      <th>Work Location</th>
-                      <th>Actions</th>
+<!--              pending        <th>Team Leader</th>-->
+                      <th>Leave Type</th>
+                      <th>Leave Days</th>
+                      <th>Reason</th>
+                      <th>Status</th>
+                      <th>Start Date</th>
+                      <th>End Date</th>
+                      <th >Actions</th>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {% for employee in employees %}
+
+
+                </thead>
+                <tbody>
+                {% for employee in employees %}
+                  {% for leave in employee.leave_set.all %}
                     <tr>
-                      <!-- Employee Profile Image -->
-                      <td>
-                        {% if employee.profile_picture %}
-                          <img src="{{ employee.profile_picture.url }}" alt="Profile Image" style="width: 50px; height: 50px; border-radius: 50%;">
-                        {% else %}
-                          No Image
-                        {% endif %}
-                      </td>
                       <td>{{ employee.name }}</td>
-                      <td>{{employee.role}}</td>
+                      <td>{{ employee.role }}</td>
                       <td>{{ employee.designation.title }}</td>
-                      <td>{{ employee.dob }}</td>
-                      <td>{{ employee.email }}</td>
-                      <td>{{ employee.phone_number }}</td>
+<!--                   -->
                       <td>{{ employee.department.name }}</td>
-                      <td>{{ employee.gender }}</td>
-                      <td>{{ employee.nationality }}</td>
-                      <td>{{ employee.permanent_address }}</td>
-                      <td>{{ employee.current_address }}</td>
-                      <td>{{ employee.aadhar_card }}</td>
-                      <td>{{ employee.date_of_join }}</td>
-                      <td>{{ employee.work_location }}</td>
-                      <!-- Action Buttons -->
+                      <td>{{ leave.leave_type.name }}</td>
+                      <td>{{ leave.leave_days  }}</td>
+                      <td>{{ leave.reason }}</td>
+                    <td>
+                        <span
+                          class="
+                            badge
+                            {% if leave.status == 'Pending' %} bg-warning text-dark
+                            {% elif leave.status == 'Approved' %} bg-success
+                            {% elif leave.status == 'Rejected' %} bg-danger
+                            {% else %} bg-secondary
+                            {% endif %}
+                          ">
+                          {{ leave.status }}
+                        </span>
+                      </td>
+
+                      <td>{{ leave.start_date }}</td>
+                      <td>{{ leave.end_date }}</td>
                       <td>
                         <div class="d-flex gap-3">
-                          <a href="{% url 'update_employee_page' employee.id %}" class="btn btn-warning">Update</a>
-                          <a href="{% url 'delete_employee' employee.id %}" class="btn btn-danger" onclick="return confirm('Are you sure?');">Delete</a>
+                          <a href="{% url 'withdraw_leave' employee.id %}" class="btn btn-danger btn-sm"
+                             onclick="return confirm('Are you sure you want to withdraw this leave?');">
+                            <i class="fas fa-user-slash"></i> Withdraw
+                          </a>
                         </div>
                       </td>
                     </tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
+                  {% empty %}
+                    <tr>
+                      <td colspan="12" class="text-center">No leave records for {{ employee.name }}</td>
+                    </tr>
+                  {% endfor %}
+                {% endfor %}
+                </tbody>
+              </table>
               </div>
               <!-- /.card-body -->
             </div>

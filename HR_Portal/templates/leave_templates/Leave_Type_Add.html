@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Add Leave{% endblock %}
+
+{% block content %}
+
+{% include 'Side_Navbar.html' %}
+
+<!-- Page Header -->
+<div class="content-wrapper">
+  <section class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+           <nav aria-label="breadcrumb">
+    <ol class="breadcrumb bg-light px-3 py-2">
+      <li class="breadcrumb-item"><a href="#">Dashboard</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Add Leave</li>
+    </ol>
+  </nav>
+
+        </div>
+        <div class="col-sm-6 text-right">
+            <a href="{% url 'LeaveDetail' %}" class="btn btn-primary">Back</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<div class="container mt-5">
+
+  <div class="card shadow">
+    <div class="card-header bg-white">
+      <h5 class="mb-0">Add Leave</h5>
+    </div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label class="form-label">Leave Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" name="leave_name" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Code <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" name="code" required>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label class="form-label">Leave Type <span class="text-danger">*</span></label>
+            <select class="form-select" name="leave_type" required>
+              <option value="Paid">Paid</option>
+              <option value="Unpaid">Unpaid</option>
+            </select>
+          </div>
+          <div class="col-md-6 d-flex align-items-end">
+            <div class="form-check me-4">
+              <input class="form-check-input" type="radio" name="employee_type" value="all" id="allEmp">
+              <label class="form-check-label" for="allEmp">All Employee</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="employee_type" value="individual" id="indEmp" checked>
+              <label class="form-check-label" for="indEmp">Individual Employee</label>
+            </div>
+          </div>
+        </div>
+
+        <ul class="nav nav-tabs mt-4" id="leaveTabs" role="tablist">
+          <li class="nav-item">
+            <a class="nav-link active" id="applicable-tab" data-bs-toggle="tab" href="#applicable" role="tab">Applicable</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" id="entitlement-tab" data-bs-toggle="tab" href="#entitlement" role="tab">Entitlement</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" id="restrictions-tab" data-bs-toggle="tab" href="#restrictions" role="tab">Restrictions</a>
+          </li>
+        </ul>
+
+        <div class="tab-content border border-top-0 p-4" id="leaveTabContent">
+          <!-- Applicable Tab -->
+          <div class="tab-pane fade show active" id="applicable" role="tabpanel">
+            <p>This is where Applicable settings will go.</p>
+          </div>
+
+          <!-- Entitlement Tab -->
+          <div class="tab-pane fade" id="entitlement" role="tabpanel">
+            <p>This is where Entitlement settings will go.</p>
+          </div>
+
+          <!-- Restrictions Tab -->
+          <div class="tab-pane fade" id="restrictions" role="tabpanel">
+            <div class="mb-3">
+              <strong>Weekends Between Leave Period:</strong><br>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="weekend_count" id="weekendCountYes" value="yes" checked>
+                <label class="form-check-label" for="weekendCountYes">Count as leave</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="weekend_count" id="weekendCountNo" value="no">
+                <label class="form-check-label" for="weekendCountNo">Don't count as leave</label>
+              </div>
+            </div>
+
+            <div>
+              <strong>Holidays Between Leave Period:</strong><br>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="holiday_count" id="holidayCountYes" value="yes">
+                <label class="form-check-label" for="holidayCountYes">Count as leave</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="holiday_count" id="holidayCountNo" value="no" checked>
+                <label class="form-check-label" for="holidayCountNo">Don't count as leave</label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-end mt-4">
+          <button type="submit" class="btn btn-primary">Submit</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+</div>
+
+{% endblock %}

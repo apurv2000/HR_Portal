@@ -2,7 +2,8 @@ import os
 import random
 import re
 import string
-
+from django.contrib.auth.models import User
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
 from django.core.mail import send_mail
 from django.shortcuts import render, redirect, get_object_or_404
@@ -60,6 +61,37 @@ def Logout(request):
     logout(request)
 
     return render(request,'admin_templates/login.html')
+
+def Leave_Type_Add(request):
+    return render(request,'leave_templates/Leave_Type_Add.html')
+
+#For Changing Status
+def change_leave_status(request, id, status):
+    leave_type = get_object_or_404(LeaveType, id=id)
+
+    if status in ['active', 'inactive', 'hidden']:
+        leave_type.status = status
+        leave_type.save()
+
+    return redirect('LeaveDetail')  # Replace with your actual view name
+
+#For Leave Detail view
+def leave_detail_view(request):
+    # Get all leave types
+    leave_types = LeaveType.objects.all()
+
+    # Create a dictionary: {LeaveType: [Leave, Leave, ...]}
+    leaves_by_type = {}
+
+    for leave_type in leave_types:
+        employee_leaves = Leave.objects.filter(leave_type=leave_type).select_related('employee')
+        if employee_leaves.exists():
+            leaves_by_type[leave_type] = employee_leaves
+
+    context = {
+        'leaves_by_type': leaves_by_type
+    }
+    return render(request, 'leave_templates/Leave_detail_view.html', context)
 
 def EmpList(request):
     employees = EmployeeBISP.objects.all()
@@ -370,8 +402,15 @@ def Login_user(request):
     if not check_password(password, user.password):
         return JsonResponse({"password_error": "Incorrect password."}, status=401)
 
+    #Fake Django User Login
+    # Create a dummy Django user (or link with one if you already do)
+    django_user, created = User.objects.get_or_create(username=user.email, email=user.email)
+    login(request, django_user)
+
     # Set common session data
+    request.session['employee_id'] = user.id
     request.session['employee_name'] = user.name
+    request.session['email']=user.email
     request.session['designation'] = user.designation.title
     request.session['total_leave'] = user.total_leave
     request.session['availed_leave'] = user.availed_leave
@@ -436,15 +475,27 @@ def Forget_passord(request):
 # =======================================================================================================
 
 def leave_Add_page(request):
+    id = request.session.get('employee_id')
 
-    return render(request,'leave_templates/leave_add.html')
+    try:
+        employee = EmployeeBISP.objects.get(id=id)
+    except EmployeeBISP.DoesNotExist:
+        employee=None
+
+    return render(request,'leave_templates/leave_add.html',{'employee':employee})
 
 
 def Apply_leave(request):
     errors = {}
+    id = request.session.get('employee_id')
+
+    try:
+        employee = EmployeeBISP.objects.get(id=id)
+    except EmployeeBISP.DoesNotExist:
+        errors["id"] = "Employee not found."
+        return render(request, "leave_templates/leave_add.html", {"errors": errors})
 
     if request.method == "POST":
-        # Extract data from POST request
         name = request.POST.get("name", "").strip()
         leavetype = request.POST.get("leavetype", "").strip()
         applydate = request.POST.get("applydate", "").strip()
@@ -452,67 +503,70 @@ def Apply_leave(request):
         tilldate = request.POST.get("tilldate", "").strip()
         reason = request.POST.get("reason", "").strip()
         file = request.FILES.get("file")
+        half_day = request.POST.get("halfday") == "on"
+        comp_off = request.POST.get("compensatory_off") == "on"
+        comp_off_reason = request.POST.get("compensatory_reason", "").strip()
 
-        # Validate Employee Existence
-        try:
-            employee = EmployeeBISP.objects.get(name=name)
-        except EmployeeBISP.DoesNotExist:
-            errors["name"] = "Employee not found."
+        if not leavetype:
+            errors["leavetype"] = "Please select a leave type."
+        else:
+            try:
+                leave_obj = LeaveType.objects.get(name=leavetype)
+            except LeaveType.DoesNotExist:
+                errors["leavetype"] = "Invalid leave type selected."
 
-        if not errors:
-            # Check remaining leave
-            remaining_leave = employee.remaining_leave if employee.remaining_leave else 0
+        from_date, till_date = None, None
+        if not fromdate or not tilldate:
+            errors["date"] = "Both start and end dates are required."
+        else:
+            try:
+                from_date = datetime.strptime(fromdate, "%Y-%m-%d").date()
+                till_date = datetime.strptime(tilldate, "%Y-%m-%d").date()
 
-            # Validate Leave Type
-            if not leavetype:
-                errors["leavetype"] = "Please select a leave type."
+                if from_date > till_date:
+                    errors["fromdate"] = "Start date cannot be after end date."
+            except ValueError:
+                errors["date"] = "Invalid date format. Use YYYY-MM-DD."
+
+        if not reason:
+            errors["reason"] = "Reason is required."
+
+        leave_days = 0
+        if from_date and till_date:
+            total_days = (till_date - from_date).days + 1
+
+            if half_day:
+                if total_days == 1:
+                    leave_days = 0.5
+                    print("Half-day leave applied: 0.5 day")
+                else:
+                    errors["halfday"] = "Half-day leave can only be applied for a single day."
             else:
-                try:
-                    leave_obj = LeaveType.objects.get(name=leavetype)
-                except LeaveType.DoesNotExist:
-                    errors["leavetype"] = "Invalid leave type selected."
+                leave_days = total_days
+                print(f"Full leave applied: {leave_days} days")
 
-            # Validate Dates
-            from_date, till_date = None, None
-            if not fromdate or not tilldate:
-                errors["date"] = "Both start and end dates are required."
-            else:
-                try:
-                    from_date = datetime.strptime(fromdate, "%Y-%m-%d").date()
-                    till_date = datetime.strptime(tilldate, "%Y-%m-%d").date()
+        # Check remaining leave
+        remaining_leave = employee.remaining_leave or 0
+        print(f"Remaining Leave: {remaining_leave}, Requested: {leave_days}")
+        if leave_days > remaining_leave:
+            errors["leave"] = f"Insufficient leave balance! You have {remaining_leave} days left."
 
-                    if from_date > till_date:
-                        errors["fromdate"] = "Start date cannot be after end date."
-                except ValueError:
-                    errors["date"] = "Invalid date format. Use YYYY-MM-DD."
+        if file:
+            allowed_extensions = ["pdf", "jpeg", "jpg", "png"]
+            file_extension = file.name.split(".")[-1].lower()
+            if file_extension not in allowed_extensions:
+                errors["file"] = "Invalid file type. Only PDF, JPEG, JPG, and PNG allowed."
+            if file.size > 2 * 1024 * 1024:
+                errors["file"] = "File size must be less than 2MB."
 
-            # Validate Reason
-            if not reason:
-                errors["reason"] = "Reason is required."
-
-            # Calculate Leave Days
-            leave_days = (till_date - from_date).days + 1 if from_date and till_date else 0
-
-            if leave_days > remaining_leave:
-                errors["leave"] = f"Insufficient leave balance! You have {remaining_leave} days left."
-
-            # Validate File Upload
-            if file:
-                allowed_extensions = ["pdf", "jpeg", "jpg", "png"]
-                file_extension = file.name.split(".")[-1].lower()
-                if file_extension not in allowed_extensions:
-                    errors["file"] = "Invalid file type. Only PDF, JPEG, JPG, and PNG allowed."
-                if file.size > 2 * 1024 * 1024:
-                    errors["file"] = "File size must be less than 2MB."
-
-        # If errors exist, return JSON response with errors
         if errors:
             return JsonResponse({"status": "error", "errors": errors}, status=400)
 
-        # Save Leave Record if no errors
+        # Save the leave record
         employee.availed_leave += leave_days
         employee.remaining_leave = max(0, employee.remaining_leave - leave_days)
         employee.save()
+
 
         Leave.objects.create(
             employee=employee,
@@ -522,15 +576,62 @@ def Apply_leave(request):
             end_date=till_date,
             reason=reason,
             status="Pending",
-            attachment=file
+            attachment=file,
+            is_half_day=half_day, # Ensure you have this field in your model
+            leave_days = leave_days,
+            compensatory_off=comp_off,
+            compensatory_reason=comp_off_reason
         )
 
-        return JsonResponse({"status": "success", "message": "Leave application submitted successfully!",
-                             'remaining_leave': employee.remaining_leave, 'availed_leave': employee.availed_leave})
+        return JsonResponse({
+            "status": "success",
+            "message": "Leave application submitted successfully!"
+        })
 
-    leave_types = LeaveType.objects.all()  # Fetch all leave types from the database
-    return render(request, "leave_templates/leave_add.html", {"leave_types": leave_types})
+    leave_types = LeaveType.objects.all()
+    context = {
+        "leave_types": leave_types,
+        "employee": employee
+    }
+    return render(request, "leave_templates/leave_add.html", context)
 
+#Show Leave List for Team members
+def Leave_list(request):
+    leave = EmployeeBISP.objects.all()
+    return render(request, 'leave_templates/Leave_list.html', {'employees': leave})
+
+#Show Leave List for particular user
 
 def Leave_list(request):
-    pass
+    user = request.user  # This is the actual User object
+    try:
+        # Get the employee record based on the logged-in user's email
+        current_employee = EmployeeBISP.objects.get(email=user.email)
+    except EmployeeBISP.DoesNotExist:
+        messages.error(request, "Employee record not found.")
+        return redirect('applyleave')  # Or a relevant fallback page
+
+    return render(request, 'leave_templates/Leave_list.html', {'employees': [current_employee]})
+
+#Withdraw Leave
+def Withdraw_leave(request, employee_id):
+    employee = get_object_or_404(EmployeeBISP, id=employee_id)
+
+    # Get the most recent leave (you may change this to only 'Pending' if needed)
+    latest_leave = Leave.objects.filter(employee=employee).order_by('-apply_date').first()
+
+    if latest_leave:
+        leave_days = latest_leave.leave_days  # Use stored leave_days instead of calculating
+
+        # Restore leave counts safely
+        employee.availed_leave = max(0, employee.availed_leave - leave_days)
+        employee.remaining_leave = min(employee.total_leave, employee.remaining_leave + leave_days)
+        employee.save()
+
+        latest_leave.delete()  # Or set a flag like is_withdrawn=True
+        messages.success(request, f"Leave withdrawn successfully. {leave_days} day(s) added back.")
+    else:
+        messages.error(request, "No leave record found to withdraw.")
+
+    return redirect('Leavelist')
+

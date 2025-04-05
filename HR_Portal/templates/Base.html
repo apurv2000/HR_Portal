@@ -10,6 +10,8 @@
 
   <!-- Google Font: Source Sans Pro -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Bootstrap 5 JS (with Popper) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
   <!-- Font Awesome -->
@@ -104,6 +106,99 @@
 <script src="{% static 'plugins/bs-custom-file-input/bs-custom-file-input.min.js' %}"></script>
 <script src="{% static 'plugins/datatables-buttons/js/buttons.colVis.min.js' %}"></script>
 
+<!-- Compensatory Checkbox -->
+<script>
+  const compensatoryCheckbox = document.getElementById('compensatoryCheckbox');
+  const reasonContainer = document.getElementById('compensatoryReasonContainer');
+
+  compensatoryCheckbox.addEventListener('change', function () {
+    reasonContainer.style.display = this.checked ? 'block' : 'none';
+  });
+</script>
+
+
+<!-- Script to handle Half Day logic -->
+<script>
+  const halfDayCheckbox = document.getElementById("halfDayCheckbox");
+  const fromDateInput = document.getElementById("fromDate");
+  const tillDateInput = document.getElementById("tillDate");
+  const tableContainer = document.getElementById("halfDayTableContainer");
+  const tableBody = document.getElementById("halfDayTableBody");
+
+  function getDateRange(from, to) {
+    const dateArray = [];
+    const current = new Date(from);
+    const end = new Date(to);
+
+    while (current <= end) {
+      const dateCopy = new Date(current);
+      dateArray.push(dateCopy);
+      current.setDate(current.getDate() + 1);
+    }
+    return dateArray;
+  }
+
+  function updateHalfDayTable() {
+    const fromDate = fromDateInput.value;
+    const tillDate = tillDateInput.value;
+
+    if (!fromDate || !tillDate) return;
+
+    const from = new Date(fromDate);
+    const to = new Date(tillDate);
+
+    if (from > to) {
+      alert("From Date should be before or equal to Till Date.");
+      return;
+    }
+
+    // Clear old rows
+    tableBody.innerHTML = "";
+
+    // Generate rows
+    const dates = getDateRange(from, to);
+    dates.forEach((date, index) => {
+      const formattedDate = date.toISOString().split('T')[0];
+      const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${formattedDate}</td>
+        <td>${dayName}</td>
+        <td>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="half_day_option_${index}" id="firstHalf_${index}" value="first_half">
+            <label class="form-check-label" for="firstHalf_${index}">First Half</label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="half_day_option_${index}" id="secondHalf_${index}" value="second_half">
+            <label class="form-check-label" for="secondHalf_${index}">Second Half</label>
+          </div>
+        </td>
+      `;
+      tableBody.appendChild(row);
+    });
+  }
+
+  // Show/hide table on checkbox change
+  halfDayCheckbox.addEventListener("change", () => {
+    if (halfDayCheckbox.checked) {
+      updateHalfDayTable();
+      tableContainer.style.display = "block";
+    } else {
+      tableContainer.style.display = "none";
+    }
+  });
+
+  // Re-generate rows if dates change
+  fromDateInput.addEventListener("change", () => {
+    if (halfDayCheckbox.checked) updateHalfDayTable();
+  });
+
+  tillDateInput.addEventListener("change", () => {
+    if (halfDayCheckbox.checked) updateHalfDayTable();
+  });
+</script>
 <!--Pop message for leave-->
 <script>
     $(document).ready(function () {
@@ -133,6 +228,7 @@
                     if (response.status == 'success') {
                         alert(response.message); // Show success message
                         $('#leave-form')[0].reset(); // Reset the form
+                        window.location.reload(); // Reload the same page
                     }
                 },
                 error: function (xhr) {
@@ -214,7 +310,7 @@ $(document).ready(function() {
             success: function(response) {
                 if (response.status === "success") {
                     alert(response.message);  // Success message
-                    window.location.href = "{% url 'Emplist' %}";  // Redirect to employee list page (or another page as needed)
+                    window.location.href = "{% url 'register' %}";  // Redirect to employee list page (or another page as needed)
                 }
             },
             error: function(xhr) {
@@ -305,8 +401,6 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 </script>
-
-
 
 </body>
 </html>

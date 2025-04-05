@@ -24,6 +24,10 @@ urlpatterns = [
       path('update2/<int:id>/', views.update_employee, name='update_employee'),
       path('leave/apply/page',views.leave_Add_page,name="leaveAdd"),
       path('leave/apply/', views.Apply_leave, name="applyleave"),
-      path('leave/list/',views.Leave_list,name="Leavelist")
+      path('leave/list/',views.Leave_list,name="Leavelist"),
+      path('withdraw-leave/<int:employee_id>/', views.Withdraw_leave, name='withdraw_leave'),
+      path('leave/Detail/', views.leave_detail_view, name="LeaveDetail"),
+      path('leave/Type/Add/', views.Leave_Type_Add, name="LeaveTypeAdd"),
+      path('leave/change-status/<int:id>/<str:status>/', views.change_leave_status, name='change_leave_status'),
 
 ]

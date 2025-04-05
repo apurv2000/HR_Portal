@@ -1,4 +1,4 @@
-
+from django.contrib.auth.models import User
 from django.db import models
 from django.core.validators import RegexValidator
 from datetime import date, datetime  # Import date
@@ -37,9 +37,10 @@ class EmployeeBISP(models.Model):
     )
     phone_number = models.CharField(validators=[phone_regex], max_length=20)
 
+
     total_leave = models.IntegerField(default=12)  # Total leaves per year
-    remaining_leave = models.IntegerField(default=12)  # Starts with total leaves
-    availed_leave = models.IntegerField(default=0)  # Initially 0
+    remaining_leave = models.FloatField(default=12.0)  # Starts with total leaves
+    availed_leave =  models.FloatField(default=0.0)  # Initially 0
     email = models.EmailField(max_length=50)
     password=models.CharField(max_length=200)
     aadhar_card=models.CharField(max_length=200)
@@ -60,7 +61,12 @@ class LeaveType(models.Model):
         ('DOE', 'Date of Employment'),
     ]
     effective_from = models.CharField(max_length=3, choices=effective_from_choices, default='DOJ')
-
+    STATUS_CHOICES = [
+        ('active', 'Active'),
+        ('inactive', 'Inactive'),
+        ('hidden', 'Hidden'),
+    ]
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='active')
     leave_time = models.PositiveIntegerField(null=True, blank=True)
     leave_time_unit = models.CharField(
         max_length=10,
@@ -107,15 +113,19 @@ class Leave(models.Model):
     reason = models.TextField()
     approved_by = models.ForeignKey(EmployeeBISP, on_delete=models.SET_NULL, null=True, blank=True,
                                     related_name='approved_leaves')
+    compensatory_off = models.BooleanField(default=False)
+    compensatory_reason = models.TextField(blank=True, null=True)
+    is_half_day = models.BooleanField(default=False)
     status = models.CharField(max_length=20,
                               choices=[('Pending', 'Pending'), ('Approved', 'Approved'), ('Rejected', 'Rejected')],
                               default='Pending')
 
     #New Field: File Attachment for supporting documents (optional)
     attachment = models.FileField(upload_to="leave_attachments/", blank=True, null=True)
+    leave_days = models.FloatField(default=1.0)  # Store 0.5, 1.0, 2.0, etc.
 
     def __str__(self):
-        return f"{self.employee.username} - {self.leave_type} ({self.status})"
+        return f"{self.employee.name} - {self.leave_type.name} ({self.status})"
 
 
 
