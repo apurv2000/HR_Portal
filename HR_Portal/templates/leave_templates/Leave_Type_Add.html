@@ -7,6 +7,7 @@
 
 {% include 'Side_Navbar.html' %}
 
+
 <!-- Page Header -->
 <div class="content-wrapper">
   <section class="content-header">
@@ -35,7 +36,8 @@
       <h5 class="mb-0">Add Leave</h5>
     </div>
     <div class="card-body">
-      <form method="post">
+     <form id="leaveTypeForm" method="POST" action="{% url 'Addleavetype' %}">
+
         {% csrf_token %}
         <div class="row mb-3">
           <div class="col-md-6">
@@ -69,8 +71,8 @@
         </div>
 
         <ul class="nav nav-tabs mt-4" id="leaveTabs" role="tablist">
-          <li class="nav-item">
-            <a class="nav-link active" id="applicable-tab" data-bs-toggle="tab" href="#applicable" role="tab">Applicable</a>
+          <li class="nav-item" id="applicableTab">
+            <a class="nav-link " id="applicable-tab" data-bs-toggle="tab" href="#applicable" role="tab">Applicable</a>
           </li>
           <li class="nav-item">
             <a class="nav-link" id="entitlement-tab" data-bs-toggle="tab" href="#entitlement" role="tab">Entitlement</a>
@@ -82,13 +84,112 @@
 
         <div class="tab-content border border-top-0 p-4" id="leaveTabContent">
           <!-- Applicable Tab -->
-          <div class="tab-pane fade show active" id="applicable" role="tabpanel">
-            <p>This is where Applicable settings will go.</p>
+          <div class="tab-pane fade " id="applicable" role="tabpanel">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label d-block">Gender:</label>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="radio" name="gender" id="genderMale" value="male">
+                  <label class="form-check-label" for="genderMale">Male</label>
+                </div>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="radio" name="gender" id="genderFemale" value="female">
+                  <label class="form-check-label" for="genderFemale">Female</label>
+                </div>
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label class="form-label d-block">Marital Status:</label>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="radio" name="marital_status" id="statusSingle" value="single">
+                  <label class="form-check-label" for="statusSingle">Single</label>
+                </div>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="radio" name="marital_status" id="statusMarried" value="married">
+                  <label class="form-check-label" for="statusMarried">Married</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="department" class="form-label">Department:</label>
+                <select name="department" id="department">
+                <option value="">-- Select Department --</option>
+                {% for dept in departments %}
+                  <option value="{{ dept.id }}">{{ dept.name }}</option>
+                {% endfor %}
+              </select>
+
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label for="employee" class="form-label">Employee:</label>
+                <select class="form-select" name="employee" id="employee">
+                  <option value="">Select Employee</option>
+                  {% for emp in employees %}
+                  <option value="{{ emp.id }}">{{ emp.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+
           </div>
 
           <!-- Entitlement Tab -->
           <div class="tab-pane fade" id="entitlement" role="tabpanel">
-            <p>This is where Entitlement settings will go.</p>
+           <div class="row mb-3">
+                <div class="col-md-4">
+                  <label class="form-label">Effective After</label>
+                  <div class="input-group">
+                    <input type="number" class="form-control" name="effective_after" min="0">
+                    <select class="form-select" name="effective_after_unit">
+                      <option value="year">Year(s)</option>
+                      <option value="month">Month(s)</option>
+                      <option value="day">Day(s)</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">From</label>
+                  <select class="form-select" name="effective_from">
+                    <option value="DOJ">Date of Joining</option>
+                    <option value="CONFIRMATION">Date of Confirmation</option>
+                    <!-- Add other options if applicable -->
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" name="accrual" id="accrualCheck" checked>
+                <label class="form-check-label" for="accrualCheck">
+                  Accrual
+                </label>
+              </div>
+
+              <div class="row">
+                <div class="col-md-4">
+                  <label class="form-label">Leave Time</label>
+                  <input type="number" class="form-control" name="leave_time" min="0">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">&nbsp;</label>
+                  <select class="form-select" name="leave_time_unit">
+                    <option value="DAYS">Days</option>
+                    <option value="HOURS">Hours</option>
+                    <!-- Add other units if necessary -->
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">&nbsp;</label>
+                  <select class="form-select" name="leave_time_frequency">
+                    <option value="YEARLY">Yearly</option>
+                    <option value="MONTHLY">Monthly</option>
+                    <!-- Add more frequency options if needed -->
+                  </select>
+                </div>
+              </div>
+
           </div>
 
           <!-- Restrictions Tab -->

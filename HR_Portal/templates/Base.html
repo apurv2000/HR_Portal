@@ -50,6 +50,25 @@
         }
         label { font-weight: bold; }
     </style>
+  <!--Handbook-->
+    <style>
+    .pdf-shadow-box {
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .pdf-viewer {
+      width: 100%;
+      height: 500px;
+      border: none;
+    }
+    .dropdown-item.acknowledge {
+      color: #198754;
+    }
+    .dropdown-item.not-approved {
+      color: #dc3545;
+    }
+  </style>
 
 </head>
 <body class="hold-transition sidebar-mini layout-fixed">
@@ -105,6 +124,128 @@
 <script src="{% static 'plugins/datatables-buttons/js/buttons.print.min.js' %}"></script>
 <script src="{% static 'plugins/bs-custom-file-input/bs-custom-file-input.min.js' %}"></script>
 <script src="{% static 'plugins/datatables-buttons/js/buttons.colVis.min.js' %}"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<!--For Leaning Video-->
+<script>
+  function playVideoInFullscreen() {
+    const video = document.getElementById("projectVideo");
+    const poster = document.getElementById("videoPoster");
+
+    // Hide the poster and show the video
+    poster.style.display = "none";
+    video.classList.remove("hidden");
+
+    // Attempt to request fullscreen
+    const requestFullscreen = video.requestFullscreen ||
+                              video.webkitRequestFullscreen ||
+                              video.mozRequestFullScreen ||
+                              video.msRequestFullscreen;
+
+    if (requestFullscreen) {
+      requestFullscreen.call(video).then(() => {
+        video.play();
+      }).catch((err) => {
+        console.error("Fullscreen error:", err);
+        video.play(); // fallback to play if fullscreen fails
+      });
+    } else {
+      console.warn("Fullscreen API not supported.");
+      video.play();
+    }
+  }
+</script>
+
+
+<!-- Script to show Acknowledge button only after viewing the PDF -->
+<script>
+  function markViewed() {
+    document.getElementById('acknowledgeSection').style.display = 'inline-block';
+  }
+</script>
+
+<!--For Leave type add-->
+<script>
+$(document).ready(function() {
+    $('#leaveTypeForm').on('submit', function(e) {
+        e.preventDefault();
+
+        // Clear previous error messages
+        $('.error-message').remove();
+        $('.form-control, .form-select').removeClass('is-invalid');
+
+        $.ajax({
+            url: $(this).attr('action'),
+            type: 'POST',
+            data: $(this).serialize(),
+            success: function(response) {
+                if (response.status === 'success') {
+                    alert(response.message);
+                    window.location.href = "{% url 'LeaveDetail' %}";
+                } else if (response.status === 'error' && response.field) {
+                    const $input = $(`[name="${response.field}"]`);
+                    $input.addClass('is-invalid');
+                    $input.after(`<div class="error-message text-danger">${response.message}</div>`);
+                } else {
+                    alert(response.message || "Something went wrong.");
+                }
+            },
+            error: function(xhr) {
+                if (xhr.status === 400 || xhr.responseJSON) {
+                    const errors = xhr.responseJSON.errors || {};
+                    for (const field in errors) {
+                        const $input = $(`[name="${field}"]`);
+                        if ($input.length) {
+                            $input.addClass('is-invalid');
+                            $input.after(`<div class="error-message text-danger">${errors[field]}</div>`);
+                        } else {
+                            alert(`${field}: ${errors[field]}`);
+                        }
+                    }
+                } else {
+                    alert("An unexpected error occurred.");
+                }
+            }
+        });
+    });
+});
+</script>
+<!--For Applicable Tab in leave Add -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const allEmpRadio = document.getElementById("allEmp");
+    const indEmpRadio = document.getElementById("indEmp");
+    const applicableTab = document.getElementById("applicableTab");
+    const applicableLink = document.getElementById("applicable-tab");
+    const entitlementLink = document.getElementById("entitlement-tab");
+
+    // Remove active classes from all tabs and contents on load
+    document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active', 'show'));
+
+    function toggleApplicableTab() {
+      if (allEmpRadio.checked) {
+        // Hide applicable tab
+        applicableTab.style.display = "none";
+
+        // If it was active, remove its active state
+        if (applicableLink.classList.contains("active")) {
+          applicableLink.classList.remove("active");
+          document.getElementById("applicable").classList.remove("show", "active");
+        }
+      } else {
+        // Show applicable tab
+        applicableTab.style.display = "block";
+      }
+    }
+
+    allEmpRadio.addEventListener("change", toggleApplicableTab);
+    indEmpRadio.addEventListener("change", toggleApplicableTab);
+
+    // Initial setup: no active tab, apply radio logic
+    toggleApplicableTab();
+  });
+</script>
+
 
 <!-- Compensatory Checkbox -->
 <script>
@@ -119,128 +260,114 @@
 
 <!-- Script to handle Half Day logic -->
 <script>
-  const halfDayCheckbox = document.getElementById("halfDayCheckbox");
-  const fromDateInput = document.getElementById("fromDate");
-  const tillDateInput = document.getElementById("tillDate");
-  const tableContainer = document.getElementById("halfDayTableContainer");
-  const tableBody = document.getElementById("halfDayTableBody");
+  document.addEventListener("DOMContentLoaded", function () {
+    const fromDate = document.getElementById("fromDate");
+    const tillDate = document.getElementById("tillDate");
+    const halfDayCheckbox = document.getElementById("halfDayCheckbox");
+    const halfDayTableContainer = document.getElementById("halfDayTableContainer");
+    const halfDayTableBody = document.getElementById("halfDayTableBody");
 
-  function getDateRange(from, to) {
-    const dateArray = [];
-    const current = new Date(from);
-    const end = new Date(to);
-
-    while (current <= end) {
-      const dateCopy = new Date(current);
-      dateArray.push(dateCopy);
-      current.setDate(current.getDate() + 1);
-    }
-    return dateArray;
-  }
-
-  function updateHalfDayTable() {
-    const fromDate = fromDateInput.value;
-    const tillDate = tillDateInput.value;
-
-    if (!fromDate || !tillDate) return;
-
-    const from = new Date(fromDate);
-    const to = new Date(tillDate);
-
-    if (from > to) {
-      alert("From Date should be before or equal to Till Date.");
-      return;
+    function formatDate(date) {
+      return date.toISOString().split('T')[0];
     }
 
-    // Clear old rows
-    tableBody.innerHTML = "";
+    function getDayName(date) {
+      return date.toLocaleDateString("en-US", { weekday: 'long' });
+    }
 
-    // Generate rows
-    const dates = getDateRange(from, to);
-    dates.forEach((date, index) => {
-      const formattedDate = date.toISOString().split('T')[0];
-      const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+    function generateHalfDayRows(start, end) {
+      halfDayTableBody.innerHTML = '';
+      let current = new Date(start);
+      end = new Date(end);
 
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td>${formattedDate}</td>
-        <td>${dayName}</td>
-        <td>
-          <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="half_day_option_${index}" id="firstHalf_${index}" value="first_half">
-            <label class="form-check-label" for="firstHalf_${index}">First Half</label>
-          </div>
-          <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="half_day_option_${index}" id="secondHalf_${index}" value="second_half">
-            <label class="form-check-label" for="secondHalf_${index}">Second Half</label>
-          </div>
-        </td>
-      `;
-      tableBody.appendChild(row);
+      while (current <= end) {
+        const row = document.createElement("tr");
+
+        const dateStr = formatDate(current);
+        const dayName = getDayName(current);
+
+        row.innerHTML = `
+          <td>
+            <input type="hidden" name="halfday_date" value="${dateStr}">
+            ${dateStr}
+          </td>
+          <td>${dayName}</td>
+          <td>
+            <select name="halfday_option_${dateStr}" class="form-control">
+              <option value="none">Full Day</option>
+              <option value="first_half">First Half</option>
+              <option value="second_half">Second Half</option>
+            </select>
+          </td>
+        `;
+        halfDayTableBody.appendChild(row);
+        current.setDate(current.getDate() + 1);
+      }
+
+      halfDayTableContainer.style.display = 'block';
+    }
+
+    halfDayCheckbox.addEventListener("change", () => {
+      if (halfDayCheckbox.checked && fromDate.value && tillDate.value) {
+        generateHalfDayRows(fromDate.value, tillDate.value);
+      } else {
+        halfDayTableContainer.style.display = 'none';
+        halfDayTableBody.innerHTML = '';
+      }
     });
-  }
 
-  // Show/hide table on checkbox change
-  halfDayCheckbox.addEventListener("change", () => {
-    if (halfDayCheckbox.checked) {
-      updateHalfDayTable();
-      tableContainer.style.display = "block";
-    } else {
-      tableContainer.style.display = "none";
-    }
-  });
+    fromDate.addEventListener("change", () => {
+      if (halfDayCheckbox.checked && fromDate.value && tillDate.value) {
+        generateHalfDayRows(fromDate.value, tillDate.value);
+      }
+    });
 
-  // Re-generate rows if dates change
-  fromDateInput.addEventListener("change", () => {
-    if (halfDayCheckbox.checked) updateHalfDayTable();
-  });
-
-  tillDateInput.addEventListener("change", () => {
-    if (halfDayCheckbox.checked) updateHalfDayTable();
+    tillDate.addEventListener("change", () => {
+      if (halfDayCheckbox.checked && fromDate.value && tillDate.value) {
+        generateHalfDayRows(fromDate.value, tillDate.value);
+      }
+    });
   });
 </script>
-<!--Pop message for leave-->
+
 <script>
     $(document).ready(function () {
+        // Submit handler (already in your code)
         $('#leave-form').submit(function (e) {
-            e.preventDefault(); // Prevent the default form submission
-
-            // Clear previous error messages
+            e.preventDefault();
             $('.text-danger').text('');
-
-            // Create FormData object to send the form data
             var formData = new FormData(this);
-
-            // Get CSRF token from the page
             var csrf_token = $('input[name="csrfmiddlewaretoken"]').val();
 
-            // Make AJAX request
             $.ajax({
                 type: "POST",
                 url: "{% url 'applyleave' %}",
                 data: formData,
-                processData: false,  // Prevent jQuery from processing the data
-                contentType: false,  // Prevent jQuery from setting contentType
+                processData: false,
+                contentType: false,
                 headers: {
-                    'X-CSRFToken': csrf_token  // Include the CSRF token in the request header
+                    'X-CSRFToken': csrf_token
                 },
                 success: function (response) {
                     if (response.status == 'success') {
-                        alert(response.message); // Show success message
-                        $('#leave-form')[0].reset(); // Reset the form
-                        window.location.reload(); // Reload the same page
+                        alert(response.message);
+                        $('#leave-form')[0].reset();
+                        window.location.reload();
                     }
                 },
                 error: function (xhr) {
-                    // Handle validation errors
                     var errors = xhr.responseJSON.errors;
-
-                    // Loop through the errors and display them next to the respective fields
                     $.each(errors, function (field, message) {
                         $('#error-' + field).text(message);
                     });
                 }
             });
+        });
+
+        // 🧽 Clear error message when field is updated
+        $('#leave-form input, #leave-form select, #leave-form textarea').on('input change focus', function () {
+            var name = $(this).attr('name');
+            $('#error-' + name).text('');
         });
     });
 </script>

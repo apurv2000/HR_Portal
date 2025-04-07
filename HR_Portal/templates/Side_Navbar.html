@@ -330,7 +330,7 @@
           </a>
         </li>
          <li class="nav-item">
-          <a href="pages/tables/jsgrid.html" class="nav-link">
+          <a href="{% url 'handbookreport' %}" class="nav-link">
             <i class="far fa-circle nav-icon"></i>
             <p>Handbook Report</p>
           </a>
@@ -407,7 +407,7 @@
           </a>
         </li>
           <li class="nav-item">
-          <a href="pages/tables/jsgrid.html" class="nav-link">
+          <a href="{% url 'handbook' %}" class="nav-link">
             <i class="far fa-circle nav-icon"></i>
             <p>Upload Handbook</p>
           </a>
@@ -426,19 +426,21 @@
         <p>Employee Salary</p>
       </a>
     </li>
-     <li class="nav-item mt-auto">
-      <a href="{% url 'Logout' %}" class="nav-link">
+     {% endif %}
+
+      {# Common #}
+      <li class="nav-item mt-auto">
+      <a href="{% url 'handbookemployee' %}" class="nav-link">
         <i class="nav-icon fas fa-file-alt"></i>
         <p>Handbook PDF</p>
       </a>
     </li>
      <li class="nav-item mt-auto">
-      <a href="{% url 'Logout' %}" class="nav-link">
+      <a href="{% url 'learningvideo' %}" class="nav-link">
         <i class="nav-icon fab fa-youtube"></i>
         <p>Learning Video</p>
       </a>
     </li>
-     {% endif %}
 
     {# Logout button added at the bottom #}
     <li class="nav-item mt-auto">

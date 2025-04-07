@@ -5,6 +5,7 @@ import string
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
+from django.core.files.storage import FileSystemStorage
 from django.core.mail import send_mail
 from django.shortcuts import render, redirect, get_object_or_404
 import json
@@ -12,10 +13,11 @@ from django.http import JsonResponse
 from django.contrib.auth.hashers import make_password, check_password
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.contrib import messages
 from django.shortcuts import render
-from .models import EmployeeBISP,Leave,LeaveType,Designation,Department# Import your Employee model
+from .models import EmployeeBISP, Leave, LeaveType, Designation, Department, HandbookPDF, \
+    HandbookAcknowledgement  # Import your Employee model
 
 
 
@@ -54,6 +56,65 @@ def Contact(request):
 def Register(request):
     return render(request,'admin_templates/register.html')
 
+def Learning_Video(request):
+    return render(request,'admin_templates/Learning_Video.html')
+
+def handdbook(request):
+    pdfs = HandbookPDF.objects.all().order_by('-uploaded_at')
+    context = {
+        'pdf_list': [
+            {
+                'file_name': pdf.file.name.split('/')[-1],
+                'file_url': pdf.file.url,
+                'uploaded_at': pdf.uploaded_at,
+                'is_active': pdf.is_active,
+                'id': pdf.id
+            } for pdf in pdfs
+        ]
+    }
+    return render(request,'admin_templates/Handbook.html',context)
+
+def handbook_report(request):
+    latest_pdf = HandbookPDF.objects.filter(is_active=True).order_by('-uploaded_at').first()
+    employees = EmployeeBISP.objects.all()
+
+    if latest_pdf:
+        ack_ids = HandbookAcknowledgement.objects.filter(pdf=latest_pdf).values_list('employee_id', flat=True)
+    else:
+        ack_ids = []
+
+    return render(request, 'admin_templates/Handbook_Report.html', {
+        'employees': employees,
+        'acknowledged_ids': ack_ids,
+    })
+
+
+def handbook_Indivi_report(request, pdf_id):
+    pdf = HandbookPDF.objects.get(id=pdf_id)
+    acknowledgements = HandbookAcknowledgement.objects.filter(pdf=pdf).select_related('employee')
+
+    return render(request, 'admin_templates/Handbook_Report.html', {
+        'pdf': pdf,
+        'acknowledgements': acknowledgements,
+    })
+
+def handbook_employee(request):
+    employee = get_object_or_404(EmployeeBISP, email=request.user.email)
+    latest_pdf = HandbookPDF.objects.filter(is_active=True).order_by('-uploaded_at').first()
+
+    acknowledgement = None
+    if latest_pdf:
+        acknowledgement = HandbookAcknowledgement.objects.filter(
+            employee=employee,
+            pdf=latest_pdf
+        ).first()
+
+    return render(request, "admin_templates/Handbook_Employee.html", {
+        "employee": employee,
+        "latest_pdf": latest_pdf,
+        "acknowledgement": acknowledgement,
+    })
+
 def Login(request):
     return render(request,'admin_templates/login.html')
 
@@ -63,7 +124,12 @@ def Logout(request):
     return render(request,'admin_templates/login.html')
 
 def Leave_Type_Add(request):
-    return render(request,'leave_templates/Leave_Type_Add.html')
+    departments = Department.objects.all()
+    employees = EmployeeBISP.objects.all()
+    return render(request,'leave_templates/Leave_Type_Add.html', {
+        'departments': departments,
+        'employees': employees,
+    })
 
 #For Changing Status
 def change_leave_status(request, id, status):
@@ -85,8 +151,7 @@ def leave_detail_view(request):
 
     for leave_type in leave_types:
         employee_leaves = Leave.objects.filter(leave_type=leave_type).select_related('employee')
-        if employee_leaves.exists():
-            leaves_by_type[leave_type] = employee_leaves
+        leaves_by_type[leave_type] = employee_leaves
 
     context = {
         'leaves_by_type': leaves_by_type
@@ -411,6 +476,7 @@ def Login_user(request):
     request.session['employee_id'] = user.id
     request.session['employee_name'] = user.name
     request.session['email']=user.email
+    request.session['role']=user.role
     request.session['designation'] = user.designation.title
     request.session['total_leave'] = user.total_leave
     request.session['availed_leave'] = user.availed_leave
@@ -512,8 +578,12 @@ def Apply_leave(request):
         else:
             try:
                 leave_obj = LeaveType.objects.get(name=leavetype)
+                if leave_obj.status == 'inactive':
+                    errors['Status'] = f"{leave_obj.name} leave is not active"
             except LeaveType.DoesNotExist:
                 errors["leavetype"] = "Invalid leave type selected."
+
+
 
         from_date, till_date = None, None
         if not fromdate or not tilldate:
@@ -533,17 +603,28 @@ def Apply_leave(request):
 
         leave_days = 0
         if from_date and till_date:
+            if isinstance(from_date, str):
+                from_date = datetime.strptime(from_date, "%Y-%m-%d").date()
+            if isinstance(till_date, str):
+                till_date = datetime.strptime(till_date, "%Y-%m-%d").date()
             total_days = (till_date - from_date).days + 1
 
-            if half_day:
-                if total_days == 1:
-                    leave_days = 0.5
-                    print("Half-day leave applied: 0.5 day")
+
+            half_day_choices = {}
+
+            current = from_date
+            while current <= till_date:
+                key = f"halfday_option_{current}"
+                choice = request.POST.get(key)
+                if choice == "first_half" or choice == "second_half":
+                    leave_days += 0.5
+                    half_day_choices[str(current)] = choice
                 else:
-                    errors["halfday"] = "Half-day leave can only be applied for a single day."
-            else:
-                leave_days = total_days
-                print(f"Full leave applied: {leave_days} days")
+                    leave_days += 1
+                current += timedelta(days=1)
+
+            print(f"Total leave days calculated: {leave_days}")
+            print("Half-day details:", half_day_choices)
 
         # Check remaining leave
         remaining_leave = employee.remaining_leave or 0
@@ -588,12 +669,8 @@ def Apply_leave(request):
             "message": "Leave application submitted successfully!"
         })
 
-    leave_types = LeaveType.objects.all()
-    context = {
-        "leave_types": leave_types,
-        "employee": employee
-    }
-    return render(request, "leave_templates/leave_add.html", context)
+
+    return render(request, "leave_templates/leave_add.html")
 
 #Show Leave List for Team members
 def Leave_list(request):
@@ -635,3 +712,142 @@ def Withdraw_leave(request, employee_id):
 
     return redirect('Leavelist')
 
+def add_leave_type(request):
+    if request.method == 'POST':
+        errors = {}
+
+        leave_name = request.POST.get('leave_name')
+        code = request.POST.get('code')
+        leave_type = request.POST.get('leave_type')  # Paid / Unpaid
+
+        if not leave_name:
+            errors['leave_name'] = "Leave name is required."
+        if not code:
+            errors['code'] = "Code is required."
+        elif LeaveType.objects.filter(code=code).exists():
+            errors['code'] = "A leave type with this code already exists."
+        if not leave_type:
+            errors['leave_type'] = "Leave type is required."
+
+        # Entitlement
+        accrual = request.POST.get('accrual') == 'on'
+        effective_after = request.POST.get('effective_after') or None
+        effective_from = request.POST.get('effective_from') or 'DOJ'
+        leave_time = request.POST.get('leave_time') or None
+        leave_time_unit = request.POST.get('leave_time_unit')
+        leave_frequency = request.POST.get('leave_time_frequency')
+
+        # Normalize values
+        effective_from = effective_from.upper()
+        leave_time_unit = leave_time_unit.upper() if leave_time_unit else None
+        leave_frequency = leave_frequency.upper() if leave_frequency else None
+
+        VALID_EFFECTIVE_FROM = ['DOJ', 'CONFIRMATION']
+        VALID_UNITS = ['DAYS', 'HOURS']
+        VALID_FREQUENCIES = ['MONTHLY', 'YEARLY']
+
+        if effective_from not in VALID_EFFECTIVE_FROM:
+            errors['effective_from'] = f"Value '{effective_from}' is not a valid choice."
+        if leave_time_unit and leave_time_unit not in VALID_UNITS:
+            errors['leave_time_unit'] = f"Value '{leave_time_unit}' is not a valid choice."
+        if leave_frequency and leave_frequency not in VALID_FREQUENCIES:
+            errors['leave_frequency'] = f"Value '{leave_frequency}' is not a valid choice."
+
+        # Restrictions
+        count_weekends_as_leave = request.POST.get('weekend_count') == 'yes'
+        count_holidays_as_leave = request.POST.get('holiday_count') == 'yes'
+
+        status = request.POST.get('status', 'active')
+        employee_type = request.POST.get('employee_type')
+        gender = request.POST.get('gender') if employee_type == 'individual' else None
+        marital_status = request.POST.get('marital_status') if employee_type == 'individual' else None
+
+        department = None
+        employee = None
+
+        if employee_type == 'individual':
+            department_id = request.POST.get('department')
+            employee_id = request.POST.get('employee')
+
+            if department_id:
+                try:
+                    department = Department.objects.get(id=department_id)
+                except Department.DoesNotExist:
+                    errors['department'] = "Invalid department selected."
+
+            if employee_id:
+                try:
+                    employee = EmployeeBISP.objects.get(id=employee_id)
+                except EmployeeBISP.DoesNotExist:
+                    errors['employee'] = "Invalid employee selected."
+
+        if errors:
+            return JsonResponse({'status': 'error', 'errors': errors}, status=400)
+
+        try:
+            LeaveType.objects.create(
+                name=leave_name,
+                code=code,
+                leave_type=leave_type,
+                accrual=accrual,
+                effective_after=int(effective_after) if effective_after else None,
+                effective_from=effective_from,
+                leave_time=int(leave_time) if leave_time else None,
+                leave_time_unit=leave_time_unit,
+                leave_frequency=leave_frequency,
+                count_weekends_as_leave=count_weekends_as_leave,
+                count_holidays_as_leave=count_holidays_as_leave,
+                status=status,
+                gender=gender,
+                marital_status=marital_status,
+                department=department,
+                employee=employee
+            )
+            return JsonResponse({'status': 'success', 'message': 'Leave Type added successfully.'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'errors': {'non_field_error': str(e)}}, status=500)
+
+    return render(request, 'leave_templates/Leave_Type_Add.html')
+
+#For Handbook PDF
+
+
+
+def uploadPDF(request):
+    if request.method == 'POST' and request.FILES.get('pdf_file'):
+        file = request.FILES['pdf_file']
+        instance = HandbookPDF.objects.create(file=file, is_active=True)  # Save model instance
+        # You may want to deactivate previous active ones
+        HandbookPDF.objects.exclude(id=instance.id).update(is_active=False)
+
+    pdfs = HandbookPDF.objects.all().order_by('-uploaded_at')
+    context = {
+        'pdf_list': [
+            {
+                'file_name': pdf.file.name.split('/')[-1],
+                'file_url': pdf.file.url,
+                'uploaded_at': pdf.uploaded_at,
+                'is_active': pdf.is_active,
+                'id': pdf.id
+            } for pdf in pdfs
+        ]
+    }
+    return render(request, 'admin_templates/Handbook.html', context)
+
+
+def acknowledge_handbook(request, pdf_id):
+    employee = get_object_or_404(EmployeeBISP, email=request.user.email)
+    pdf = get_object_or_404(HandbookPDF, id=pdf_id)
+
+    # Update or create acknowledgement for this employee and PDF
+    acknowledgement, created = HandbookAcknowledgement.objects.get_or_create(
+        employee=employee,
+        pdf=pdf,
+        defaults={'status': 'Acknowledge'}
+    )
+
+    if not created:
+        acknowledgement.status = 'Acknowledge'
+        acknowledgement.save()
+
+    return redirect('handbookemployee')

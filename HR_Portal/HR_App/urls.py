@@ -27,7 +27,16 @@ urlpatterns = [
       path('leave/list/',views.Leave_list,name="Leavelist"),
       path('withdraw-leave/<int:employee_id>/', views.Withdraw_leave, name='withdraw_leave'),
       path('leave/Detail/', views.leave_detail_view, name="LeaveDetail"),
-      path('leave/Type/Add/', views.Leave_Type_Add, name="LeaveTypeAdd"),
+      path('leave/Type/Add/page/', views.Leave_Type_Add, name="LeaveTypeAdd"),
       path('leave/change-status/<int:id>/<str:status>/', views.change_leave_status, name='change_leave_status'),
+      path('leave/Type/Add/',views.add_leave_type,name='Addleavetype'),
+      path('Handbook/', views.handdbook, name='handbook'),
+      path('Learning/video/',views.Learning_Video,name='learningvideo'),
+      path('Handbook/Report/', views.handbook_report, name='handbookreport'),
+      path('Handbook/Employee/page', views.handbook_employee, name='handbookemployee'),
+      path('Handbookupload/',views.uploadPDF,name='uploadPDF'),
+      path('acknowledge-handbook/<int:pdf_id>/', views.acknowledge_handbook, name='acknowledge_handbook'),
+      path('handbook-report/<int:pdf_id>/', views.handbook_Indivi_report, name='handbookempreport'),
+
 
 ]

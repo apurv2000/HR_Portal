@@ -51,6 +51,7 @@ class EmployeeBISP(models.Model):
     role = models.CharField(max_length=50, choices=ROLE_CHOICES, default='Employee')
     profile_picture = models.ImageField(upload_to="profile_pics/", blank=True, null=True)
 
+
 class LeaveType(models.Model):
     name = models.CharField(max_length=100, unique=True)
     code = models.CharField(max_length=10, unique=True)
@@ -96,7 +97,13 @@ class LeaveType(models.Model):
     ]
     marital_status = models.CharField(max_length=10, choices=marital_status_choices, blank=True, null=True)
 
-    department = models.CharField(max_length=20, blank=True, null=True) # Assuming department is a string, adjust if needed
+    department = models.ForeignKey(
+        'Department',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        help_text="Optional: Restrict to a specific department"
+    )
 
     employee = models.ForeignKey('EmployeeBISP', on_delete=models.SET_NULL, blank=True, null=True)
 
@@ -126,6 +133,26 @@ class Leave(models.Model):
 
     def __str__(self):
         return f"{self.employee.name} - {self.leave_type.name} ({self.status})"
+
+class HandbookPDF(models.Model):
+    file = models.FileField(upload_to='handbooks/')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(default=False)
+
+class HandbookAcknowledgement(models.Model):
+    employee = models.ForeignKey(EmployeeBISP, on_delete=models.CASCADE)
+    pdf = models.ForeignKey(HandbookPDF, on_delete=models.CASCADE)
+
+    acknowledged_at = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(
+        max_length=20,
+        choices=[('Not Acknowledge', 'Not Acknowledge'), ('Acknowledge', 'Acknowledge')],
+        default='Not Acknowledge'
+    )
+
+
+    class Meta:
+        unique_together = ('pdf', 'employee')  # prevent duplicate acknowledgements
 
 
 
