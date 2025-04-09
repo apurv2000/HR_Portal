@@ -10,8 +10,7 @@
 
   <!-- Google Font: Source Sans Pro -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <!-- Bootstrap 5 JS (with Popper) -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
 
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
   <!-- Font Awesome -->
@@ -40,6 +39,8 @@
   <link rel="stylesheet" href="{% static 'css/statistics.css' %}">
    <!--For Leave_Add -->
      <style>
+
+
         .container {
             margin-top: 30px;
         }
@@ -50,25 +51,25 @@
         }
         label { font-weight: bold; }
     </style>
-  <!--Handbook-->
-    <style>
-    .pdf-shadow-box {
-      box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
-      border-radius: 10px;
-      overflow: hidden;
-    }
-    .pdf-viewer {
-      width: 100%;
-      height: 500px;
-      border: none;
-    }
-    .dropdown-item.acknowledge {
-      color: #198754;
-    }
-    .dropdown-item.not-approved {
-      color: #dc3545;
-    }
-  </style>
+      <!--Handbook-->
+        <style>
+        .pdf-shadow-box {
+          box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+          border-radius: 10px;
+          overflow: hidden;
+        }
+        .pdf-viewer {
+          width: 100%;
+          height: 500px;
+          border: none;
+        }
+        .dropdown-item.acknowledge {
+          color: #198754;
+        }
+        .dropdown-item.not-approved {
+          color: #dc3545;
+        }
+      </style>
 
 </head>
 <body class="hold-transition sidebar-mini layout-fixed">
@@ -125,6 +126,21 @@
 <script src="{% static 'plugins/bs-custom-file-input/bs-custom-file-input.min.js' %}"></script>
 <script src="{% static 'plugins/datatables-buttons/js/buttons.colVis.min.js' %}"></script>
 <script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Bootstrap 5 JS (with Popper) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- JavaScript to toggle visibility for leave details toggles-->
+<script>
+  function toggleCollapse(id) {
+    var element = document.getElementById(id);
+    if (element.style.display === "none" || element.style.display === "") {
+      element.style.display = "block";
+    } else {
+      element.style.display = "none";
+    }
+  }
+</script>
 <!--For Leaning Video-->
 <script>
   function playVideoInFullscreen() {
@@ -437,7 +453,7 @@ $(document).ready(function() {
             success: function(response) {
                 if (response.status === "success") {
                     alert(response.message);  // Success message
-                    window.location.href = "{% url 'register' %}";  // Redirect to employee list page (or another page as needed)
+                    window.location.href = "{% url 'Emplist' %}";  // Redirect to employee list page (or another page as needed)
                 }
             },
             error: function(xhr) {

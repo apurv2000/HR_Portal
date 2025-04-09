@@ -106,19 +106,18 @@
                       <div id="error-remainingleave" class="text-danger"></div>
                   </div>
 
-                  <!-- Leave Type -->
-                  <div class="mb-3">
-                      <label>Leave Type:<span class="text-danger">*</span></label>
-                      <select class="form-control" name="leavetype">
-                          <option value="" disabled selected>Select Leave</option>
-                          <option value="Sick">Sick Leave</option>
-                          <option value="Casual">Casual Leave</option>
-                          <option value="Annual">Annual Leave</option>
-                          <option value="Maternity">Maternity Leave</option>
-                      </select>
-                      <div id="error-leavetype" class="text-danger"></div>
-                      <div id="error-Status" class="text-danger"></div>
-                  </div>
+                 <!-- Leave Type -->
+                    <div class="mb-3">
+                        <label>Leave Type:<span class="text-danger">*</span></label>
+                        <select class="form-control" name="leavetype">
+                            <option value="" disabled selected>Select Leave</option>
+                            {% for leave in leave_type %}
+                                <option value="{{ leave.name }}">{{ leave.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <div id="error-leavetype" class="text-danger"></div>
+                        <div id="error-Status" class="text-danger"></div>
+                    </div>
 
                         <!-- From Date -->
                         <div class="mb-3">

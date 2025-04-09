@@ -37,6 +37,7 @@ urlpatterns = [
       path('Handbookupload/',views.uploadPDF,name='uploadPDF'),
       path('acknowledge-handbook/<int:pdf_id>/', views.acknowledge_handbook, name='acknowledge_handbook'),
       path('handbook-report/<int:pdf_id>/', views.handbook_Indivi_report, name='handbookempreport'),
+      path('export-to-excel/', views.export_to_excel_handbook, name='export_to_excel'),
 
 
 ]

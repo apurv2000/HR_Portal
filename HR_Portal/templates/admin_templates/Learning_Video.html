@@ -24,76 +24,151 @@
     </div>
   </section>
 
-  <!-- Main Content -->
-  <main class="flex-1 flex flex-col">
-
-    <!-- Content Section -->
-    <div class="p-6 overflow-y-auto">
-      <h1 class="text-2xl font-bold mb-6">Learning Video</h1>
-
-     <!-- Project Management Section -->
-<div class="border rounded bg-white p-4 mb-6">
-  <h3 class="text-xl font-semibold mb-4">Project Management</h3>
-  <div class="grid grid-cols-3 gap-6">
-
-    <!-- Add Project Card -->
-        <!-- Add Project Card -->
-            <div class="border rounded p-4 shadow text-center">
-              <video id="projectVideo" controls class="mx-auto mb-4 w-full max-w-md rounded"
-                     poster="{% static 'img/avatar4.png' %}">
-                <source src="https://www.youtube.com/watch?v=dJZuTI-r34I" type="video/mp4">
-                Your browser does not support the video tag.
-              </video>
-              <button onclick="openFullscreen('projectVideo')"
-                      class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-                Full Screen
-              </button>
+  <section>
+    <div class="content-header pt-0">
+      <div class="row">
+        <div class="col-12 m-auto">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">
+                <b>Learning Video</b>
+              </h3>
             </div>
+            <div class="card-body container">
+              <!-- For Project Management -->
+              <div class="row mb-4">
+                <div class="col-sm-12">
+                  <div class="card-header">
+                    <h3 class="card-title">Project Management</h3>
+                  </div>
+                  <div class="card-body">
+                    <div class="row">
+                      <div class="col-sm-12 col-md-6 col-lg-4">
+                        <a href="#" target="_blank">
+                          <div class="card text-center font-weight-bold">
+                            <img src="{% static 'img/photo1.png' %}" class="card-img-top" style="border:1px solid;padding:10px;">
+                            <div class="card-body">
+                              Add Project
+                            </div>
+                          </div>
+                        </a>
+                      </div>
+                      <div class="col-sm-12 col-md-6 col-lg-4">
+                        <a href="#" target="_blank">
+                          <div class="card text-center font-weight-bold">
+                            <img src="{% static 'img/photo2.png' %}" class="card-img-top" style="border:1px solid;padding:10px;">
+                            <div class="card-body">
+                              Add Project
+                            </div>
+                          </div>
+                        </a>
+                      </div>
+                      <div class="col-sm-12 col-md-6 col-lg-4">
+                        <a href="#" target="_blank">
+                          <div class="card text-center font-weight-bold">
+                            <img src="{% static 'img/photo3.jpg' %}" class="card-img-top" style="border:1px solid;padding:10px;">
+                            <div class="card-body">
+                              Add Project
+                            </div>
+                          </div>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
+              <!-- For Timesheet -->
+              <div class="row mb-4">
+                <div class="col-sm-12">
+                  <div class="card-header">
+                    <h3 class="card-title">Timesheet Management</h3>
+                  </div>
+                  <div class="card-body">
+                    <div class="row">
+                      <div class="col-sm-12 col-md-6 col-lg-4">
+                        <a href="#" target="_blank">
+                          <div class="card text-center font-weight-bold">
+                            <img src="{% static 'img/photo4.jpg' %}" class="card-img-top" style="border:1px solid;padding:10px;">
+                            <div class="card-body">
+                              Timesheet Video
+                            </div>
+                          </div>
+                        </a>
+                      </div>
+                      <div class="col-sm-12 col-md-6 col-lg-4">
+                        <a href="#" target="_blank">
+                          <div class="card text-center font-weight-bold">
+                            <img src="{% static 'img/prod-1.jpg' %}" class="card-img-top" style="border:1px solid;padding:10px;">
+                            <div class="card-body">
+                              Timesheet Video
+                            </div>
+                          </div>
+                        </a>
+                      </div>
+                      <div class="col-sm-12 col-md-6 col-lg-4">
+                        <a href="#" target="_blank">
+                          <div class="card text-center font-weight-bold">
+                            <img src="{% static 'img/prod-2.jpg' %}" class="card-img-top" style="border:1px solid;padding:10px;">
+                            <div class="card-body">
+                              Timesheet Video
+                            </div>
+                          </div>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-
-
-    <!-- Add Task Card -->
-    <div class="border rounded p-4 shadow text-center">
-      <img src="{% static 'images/add_task.png' %}" alt="Add Task" class="mx-auto mb-4" />
-      <button class="text-blue-600 font-bold text-lg hover:underline">Add Task</button>
+              <!-- For Leave Management -->
+              <div class="row mb-4">
+                <div class="col-sm-12">
+                  <div class="card-header">
+                    <h3 class="card-title">Leave Management</h3>
+                  </div>
+                  <div class="card-body">
+                    <div class="row">
+                      <div class="col-sm-12 col-md-6 col-lg-4">
+                        <a href="#" target="_blank">
+                          <div class="card text-center font-weight-bold">
+                            <img src="{% static 'img/prod-3.jpg' %}" class="card-img-top" style="border:1px solid;padding:10px;">
+                            <div class="card-body">
+                              Leave Video
+                            </div>
+                          </div>
+                        </a>
+                      </div>
+                      <div class="col-sm-12 col-md-6 col-lg-4">
+                        <a href="#" target="_blank">
+                          <div class="card text-center font-weight-bold">
+                            <img src="{% static 'img/prod-4.jpg' %}" class="card-img-top" style="border:1px solid;padding:10px;">
+                            <div class="card-body">
+                              Leave Video
+                            </div>
+                          </div>
+                        </a>
+                      </div>
+                      <div class="col-sm-12 col-md-6 col-lg-4">
+                        <a href="#" target="_blank">
+                          <div class="card text-center font-weight-bold">
+                            <img src="{% static 'img/prod-5.jpg' %}" class="card-img-top" style="border:1px solid;padding:10px;">
+                            <div class="card-body">
+                              Leave Video
+                            </div>
+                          </div>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div> <!-- End card-body -->
+          </div> <!-- End card -->
+        </div>
+      </div>
     </div>
+  </section>
 
-    <!-- Edit Project & Task Card -->
-    <div class="border rounded p-4 shadow text-center">
-      <img src="{% static 'images/edit_project_task.png' %}" alt="Edit Project & Task" class="mx-auto mb-4" />
-      <button class="text-blue-600 font-bold text-lg hover:underline">Edit Project & Task</button>
-    </div>
-
-  </div>
-</div>
-
-<!-- Timesheet Management Section -->
-<div class="border rounded bg-white p-4 mb-6">
-  <h3 class="text-xl font-semibold mb-4">Timesheet Management</h3>
-  <div class="grid grid-cols-3 gap-6">
-
-    <!-- Add Daily Timesheet -->
-    <div class="border rounded p-4 shadow text-center">
-      <img src="{% static 'images/add_daily_timesheet.png' %}" alt="Add Daily Timesheet" class="mx-auto mb-4" />
-      <button class="text-blue-600 font-bold text-lg hover:underline">Add Daily Timesheet</button>
-    </div>
-
-    <!-- Add Weekly Timesheet -->
-    <div class="border rounded p-4 shadow text-center">
-      <img src="{% static 'images/add_weekly_timesheet.png' %}" alt="Add Weekly Timesheet" class="mx-auto mb-4" />
-      <button class="text-blue-600 font-bold text-lg hover:underline">Add Weekly Timesheet</button>
-    </div>
-
-    <!-- Add Image Timesheet -->
-    <div class="border rounded p-4 shadow text-center">
-      <img src="{% static 'images/add_image_timesheet.png' %}" alt="Add Image Timesheet" class="mx-auto mb-4" />
-      <button class="text-blue-600 font-bold text-lg hover:underline">Add Image Timesheet</button>
-    </div>
-
-  </div>
-</div>
-    </div>
-  </main>
 </div>
 {% endblock %}

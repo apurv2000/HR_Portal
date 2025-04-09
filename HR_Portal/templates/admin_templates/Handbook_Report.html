@@ -24,7 +24,10 @@
     </div>
       </section>
     <div class="container py-3">
-      <h4 class="mb-3">Employee Handbook</h4>
+     <div class="d-flex justify-content-end">
+    <a href="{% url 'export_to_excel' %}" class="btn btn-primary mb-3">Download Report (Excel)</a>
+        </div>
+
       <div class="card">
         <div class="card-body">
           <table class="table align-middle table-hover">

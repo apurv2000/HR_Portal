@@ -5,8 +5,8 @@
 
 <div class="container-fluid w-100 vh-100 d-flex justify-content-center align-items-center">
   <div class="register-box w-100" style="max-width: 1200px;">
-    <div class="register-logo text-center">
-      <img src="{% static 'img/BISP.png' %}" alt="AdminLTE Logo" class="brand-image img-thumbnail elevation-3" style="width: 25% ; height: 25% ; opacity: .9;">
+   <div class="register-logo d-flex justify-content-center align-items-center">
+  <img src="{% static 'img/BISP.png' %}" alt="AdminLTE Logo" class="brand-image img-thumbnail elevation-3" style="width: 15%; height: 15%; opacity: .9;">
     </div>
 
     <div class="card p-4">
@@ -130,7 +130,10 @@
             <div class="col-md-4">
               <label for="ProfileImage">Profile Image</label>
               <input type="file" class="form-control" id="ProfileImage" name="image">
-              {% if employee.profile_picture %}
+
+            </div>
+            <div class="col-md-4">
+               {% if employee.profile_picture %}
                 <img src="{{ employee.profile_picture.url }}" class="img-thumbnail mt-2" width="100">
               {% endif %}
             </div>

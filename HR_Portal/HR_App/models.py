@@ -4,11 +4,6 @@ from django.core.validators import RegexValidator
 from datetime import date, datetime  # Import date
 
 
-class Designation(models.Model):
-    title = models.CharField(max_length=200, unique=True)
-
-    def __str__(self):
-        return self.title
 
 
 class Department(models.Model):
@@ -16,6 +11,14 @@ class Department(models.Model):
 
     def __str__(self):
         return self.name
+
+class Designation(models.Model):
+    title = models.CharField(max_length=200, unique=True)
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='designations')
+
+    def __str__(self):
+        return self.title
+
 
 class EmployeeBISP(models.Model):
     ROLE_CHOICES = [
@@ -118,6 +121,8 @@ class Leave(models.Model):
     apply_date = models.DateField()
     end_date = models.DateField()
     reason = models.TextField()
+    reject_date=models.DateTimeField(auto_now_add=True,null=True)
+    reject_reason=models.TextField(null=True)
     approved_by = models.ForeignKey(EmployeeBISP, on_delete=models.SET_NULL, null=True, blank=True,
                                     related_name='approved_leaves')
     compensatory_off = models.BooleanField(default=False)

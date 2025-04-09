@@ -9,7 +9,7 @@ from django.core.files.storage import FileSystemStorage
 from django.core.mail import send_mail
 from django.shortcuts import render, redirect, get_object_or_404
 import json
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.contrib.auth.hashers import make_password, check_password
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
@@ -18,7 +18,7 @@ from django.contrib import messages
 from django.shortcuts import render
 from .models import EmployeeBISP, Leave, LeaveType, Designation, Department, HandbookPDF, \
     HandbookAcknowledgement  # Import your Employee model
-
+from openpyxl import Workbook
 
 
 
@@ -253,8 +253,10 @@ def update_employee(request, id):
             errors["DOB"] = "Invalid Date of Birth format. Use YYYY-MM-DD."
 
         # Validate Designation and Department
-        designation_obj = Designation.objects.get_or_create(title=designation)[0]
+
         department_obj = Department.objects.get_or_create(name=department)[0]
+        designation_obj = Designation.objects.get_or_create(title=designation,department=department_obj)[0]
+
 
         if designation not in ALLOWED_DESIGNATIONS:
             errors["Designation"] = f"Invalid designation. Allowed: {', '.join(ALLOWED_DESIGNATIONS)}"
@@ -296,6 +298,8 @@ def update_employee(request, id):
 
         # Save the updated employee data
         employee.save()
+
+
 
         return JsonResponse({"status": "success", "message": "Employee updated successfully!"})
 
@@ -395,8 +399,8 @@ def register_user(request):
             errors["DOB"] = "Invalid Date of Birth format. Use YYYY-MM-DD."
 
         # Validate Designation and Department
-        designation_obj = Designation.objects.get_or_create(title=designation)[0]
         department_obj = Department.objects.get_or_create(name=department)[0]
+        designation_obj = Designation.objects.get_or_create(title=designation, department=department_obj)[0]
 
         if designation not in ALLOWED_DESIGNATIONS:
             errors["Designation"] = f"Invalid designation. Allowed: {', '.join(ALLOWED_DESIGNATIONS)}"
@@ -548,7 +552,19 @@ def leave_Add_page(request):
     except EmployeeBISP.DoesNotExist:
         employee=None
 
-    return render(request,'leave_templates/leave_add.html',{'employee':employee})
+        # Fetch all active leave types
+    leave_types = LeaveType.objects.filter(status='active', employee__isnull=True)
+
+    # If employee exists, filter the leave types that are specific to them (if any)
+    if employee:
+        # Optionally, filter employee-specific leave types (e.g. department-based, role-based, etc.)
+        # Assuming LeaveType has an employee field or a relationship (e.g. department, role)
+        employee_leave_types = LeaveType.objects.filter(employee=employee)
+
+         # Combine both generic leave types and employee-specific leave types
+        leave_types = leave_types.union(employee_leave_types)
+
+    return render(request,'leave_templates/leave_add.html',{'employee':employee,'leave_type':leave_types})
 
 
 def Apply_leave(request):
@@ -583,6 +599,8 @@ def Apply_leave(request):
             except LeaveType.DoesNotExist:
                 errors["leavetype"] = "Invalid leave type selected."
 
+        if leave_obj.employee and leave_obj.department:
+            pass
 
 
         from_date, till_date = None, None
@@ -601,26 +619,48 @@ def Apply_leave(request):
         if not reason:
             errors["reason"] = "Reason is required."
 
+        # Initialize leave days and half day choices
         leave_days = 0
+        half_day_choices = {}
+
         if from_date and till_date:
-            if isinstance(from_date, str):
-                from_date = datetime.strptime(from_date, "%Y-%m-%d").date()
-            if isinstance(till_date, str):
-                till_date = datetime.strptime(till_date, "%Y-%m-%d").date()
-            total_days = (till_date - from_date).days + 1
-
-
-            half_day_choices = {}
-
+            # Handle weekends and holidays as leave
             current = from_date
             while current <= till_date:
                 key = f"halfday_option_{current}"
                 choice = request.POST.get(key)
+
+                # Determine if current day is a weekend (Saturday or Sunday)
+                is_weekend = current.weekday() in [6]  # 5 is Saturday, 6 is Sunday
+
+                # Check if it's a holiday (You would need a list of holidays or a holiday-checking function)
+                is_holiday = False  # Replace with actual holiday-checking logic if needed
+
+                # Determine if it's a leave day (weekend or holiday)
+                is_leave_day = False
+
+                if leave_obj.count_weekends_as_leave and is_weekend:
+                    is_leave_day = True
+
+                if leave_obj.count_holidays_as_leave and is_holiday:
+                    is_leave_day = True
+
+                # If the current day is a weekend or holiday and we shouldn't count it as leave
+                if (leave_obj.count_weekends_as_leave and is_weekend) or (
+                        leave_obj.count_holidays_as_leave and is_holiday):
+                    # Skip weekends and holidays completely from leave counting
+                    current += timedelta(days=1)  # Move to the next day
+                    continue  # Skip this iteration (do not count it as leave)
+
+                # If a half-day is selected, count it as leave
                 if choice == "first_half" or choice == "second_half":
                     leave_days += 0.5
                     half_day_choices[str(current)] = choice
                 else:
+                    # Otherwise, count the day as a full leave day
                     leave_days += 1
+
+                # Move to the next day
                 current += timedelta(days=1)
 
             print(f"Total leave days calculated: {leave_days}")
@@ -678,7 +718,6 @@ def Leave_list(request):
     return render(request, 'leave_templates/Leave_list.html', {'employees': leave})
 
 #Show Leave List for particular user
-
 def Leave_list(request):
     user = request.user  # This is the actual User object
     try:
@@ -686,7 +725,7 @@ def Leave_list(request):
         current_employee = EmployeeBISP.objects.get(email=user.email)
     except EmployeeBISP.DoesNotExist:
         messages.error(request, "Employee record not found.")
-        return redirect('applyleave')  # Or a relevant fallback page
+        return redirect('applyleave')
 
     return render(request, 'leave_templates/Leave_list.html', {'employees': [current_employee]})
 
@@ -851,3 +890,41 @@ def acknowledge_handbook(request, pdf_id):
         acknowledgement.save()
 
     return redirect('handbookemployee')
+
+#For download handbook report data in excel form
+def export_to_excel_handbook(request):
+    # Create an Excel workbook and sheet
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Employee Report"
+
+    # Define column headers
+    headers = ['#', 'Employee Name', 'Email', 'Role', 'Status']
+    ws.append(headers)
+
+    # Get all employees (you can modify this query if you want to filter)
+    employees = EmployeeBISP.objects.all()
+
+    # Loop through employees and check acknowledgment status from the HandbookAcknowledgement model
+    for idx, employee in enumerate(employees, start=1):
+        # Get the acknowledgment status from the HandbookAcknowledgement model
+        handbook_acknowledgement = HandbookAcknowledgement.objects.filter(employee=employee).first()
+
+        # Check if the employee has acknowledged the handbook
+        if handbook_acknowledgement and handbook_acknowledgement.status == 'Acknowledge':
+            status = 'Acknowledged'
+        else:
+            status = 'Not Acknowledge'
+
+        # Append employee data to Excel sheet
+        ws.append([idx, employee.name, employee.email, employee.role, status])
+
+    # Generate the response
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename=employee_report.csv'
+
+    # Save the workbook into the response
+    wb.save(response)
+    return response
