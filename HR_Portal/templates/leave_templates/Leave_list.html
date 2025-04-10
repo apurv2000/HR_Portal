@@ -30,7 +30,7 @@
     {% if messages %}
       {% for message in messages %}
       <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-        {{ message }}
+         {{ message }}
         <button type="button" class="close" data-bs-dismiss="alert" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
@@ -57,7 +57,7 @@
                 <thead>
                     <tr>
 
-                      <th>Employee</th>
+
                       <th>Role</th>
                       <th>Designation</th>
                       <th>Department</th>
@@ -77,7 +77,7 @@
                 {% for employee in employees %}
                   {% for leave in employee.leave_set.all %}
                     <tr>
-                      <td>{{ employee.name }}</td>
+
                       <td>{{ employee.role }}</td>
                       <td>{{ employee.designation.title }}</td>
 <!--                   -->
@@ -102,12 +102,14 @@
                       <td>{{ leave.start_date }}</td>
                       <td>{{ leave.end_date }}</td>
                       <td>
+                        {% if leave.status != 'Withdrawn' %}
                         <div class="d-flex gap-3">
-                          <a href="{% url 'withdraw_leave' employee.id %}" class="btn btn-danger btn-sm"
+                          <a href="{% url 'withdraw_leave' leave.id %}" class="btn btn-danger btn-sm"
                              onclick="return confirm('Are you sure you want to withdraw this leave?');">
                             <i class="fas fa-user-slash"></i> Withdraw
                           </a>
                         </div>
+                        {% endif %}
                       </td>
                     </tr>
                   {% empty %}

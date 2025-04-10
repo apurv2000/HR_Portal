@@ -129,12 +129,13 @@ class Leave(models.Model):
     compensatory_reason = models.TextField(blank=True, null=True)
     is_half_day = models.BooleanField(default=False)
     status = models.CharField(max_length=20,
-                              choices=[('Pending', 'Pending'), ('Approved', 'Approved'), ('Rejected', 'Rejected')],
+                              choices=[('Pending', 'Pending'), ('Approved', 'Approved'), ('Rejected', 'Rejected'),('Withdraw','Withdraw')],
                               default='Pending')
 
     #New Field: File Attachment for supporting documents (optional)
     attachment = models.FileField(upload_to="leave_attachments/", blank=True, null=True)
     leave_days = models.FloatField(default=1.0)  # Store 0.5, 1.0, 2.0, etc.
+    half_day_type_name=models.CharField(max_length=20,null=True)
 
     def __str__(self):
         return f"{self.employee.name} - {self.leave_type.name} ({self.status})"

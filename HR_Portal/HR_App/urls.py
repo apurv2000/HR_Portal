@@ -25,7 +25,7 @@ urlpatterns = [
       path('leave/apply/page',views.leave_Add_page,name="leaveAdd"),
       path('leave/apply/', views.Apply_leave, name="applyleave"),
       path('leave/list/',views.Leave_list,name="Leavelist"),
-      path('withdraw-leave/<int:employee_id>/', views.Withdraw_leave, name='withdraw_leave'),
+      path('withdraw-leave/<int:leave_id>/', views.Withdraw_leave, name='withdraw_leave'),
       path('leave/Detail/', views.leave_detail_view, name="LeaveDetail"),
       path('leave/Type/Add/page/', views.Leave_Type_Add, name="LeaveTypeAdd"),
       path('leave/change-status/<int:id>/<str:status>/', views.change_leave_status, name='change_leave_status'),
@@ -38,6 +38,7 @@ urlpatterns = [
       path('acknowledge-handbook/<int:pdf_id>/', views.acknowledge_handbook, name='acknowledge_handbook'),
       path('handbook-report/<int:pdf_id>/', views.handbook_Indivi_report, name='handbookempreport'),
       path('export-to-excel/', views.export_to_excel_handbook, name='export_to_excel'),
-
+      path('leave/list/approved/', views.Leave_list_approved, name='LeavelistApproved'),
+      path('leave/status/<int:leave_id>/', views.update_leave_approve, name='update_leave_status'),
 
 ]

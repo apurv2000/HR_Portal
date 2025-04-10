@@ -91,7 +91,11 @@
                             <strong>Leave Dates:</strong> {{ leave.start_date|date:"M d, Y" }} - {{ leave.end_date|date:"M d, Y" }}<br>
                             <strong>Reason:</strong> {{ leave.reason }}<br>
                             <strong>Half Day:</strong> {{ leave.is_half_day|yesno:"Yes,No" }}<br>
-                            <strong>Comp Off:</strong> {{ leave.comp_off|yesno:"Yes,No" }}
+                            <strong>Comp Off:</strong> {{ leave.comp_off|yesno:"Yes,No" }}<br>
+                            <strong>Status:</strong> {{ leave.status  }}<br>
+
+
+
                           </div>
                         {% empty %}
                           <p>No employee leave data for this type.</p>
