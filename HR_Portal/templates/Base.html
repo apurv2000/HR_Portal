@@ -1,7 +1,7 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html"
-      xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+      xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -36,7 +36,135 @@
   <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
   <!-- Statistics -->
   <link rel="stylesheet" href="{% static 'css/statistics.css' %}">
+<!--For Project Detail Page-->
+      <style>
+        .info-card {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .info-card-label {
+            color: #6c757d;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+        .info-card-value {
+            font-weight: bold;
+        }
+        .detail-label {
+            color: #6c757d;
+            font-weight: bold;
+        }
+        .detail-value {
+            color: #343a40;
+        }
+        .recent-task {
+            background-color: #fff;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .task-icon {
+            background-color: #007bff;
+            color: #fff;
+            border-radius: 5px;
+            padding: 5px;
+            margin-right: 10px;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            width: 24px;
+            height: 24px;
+        }
+        .task-meta {
+            color: #6c757d;
+            font-size: 0.9em;
+            background-color: #f8f9fa;
+            padding: 5px;
+            border-radius: 3px;
+        }
+        .user-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            margin-right: 10px;
+            object-fit: cover;
+        }
+    </style>
+    <!--For Project Add Field Look-->
+  <style>
+      .card {
+        border-radius: 10px;
+    }
 
+    .card-header {
+        border-bottom: 1px solid #dee2e6;
+        padding: 1rem 1.5rem;
+    }
+
+    .card-body {
+        padding: 2rem;
+    }
+
+    .form-label {
+        font-weight: 600;
+    }
+
+    .form-control, .form-select {
+        border-radius: 0.4rem;
+        padding: 0.45rem 0.75rem;
+    }
+
+    .input-group .form-control {
+        margin-left: 5px;
+    }
+
+    .row.mb-3 {
+        align-items: center;
+    }
+
+    .form-text {
+        font-size: 0.85rem;
+    }
+
+    textarea.form-control {
+        resize: vertical;
+    }
+
+    .text-end {
+        text-align: right;
+    }
+
+    .select2-container--default .select2-selection--multiple {
+        padding: 0.35rem;
+        min-height: 38px;
+        border: 1px solid #ced4da;
+        border-radius: 0.4rem;
+    }
+    .form-control, .form-select {
+        border: 1px solid #ced4da;
+        box-shadow: none;
+        transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 0.15rem rgba(13, 110, 253, 0.25);
+    }
+
+    .form-label {
+        font-weight: 600;
+    }
+
+    .card-form {
+        border: 1px solid #e3e6f0;
+        border-radius: 1rem;
+        padding: 2rem;
+        box-shadow: 0 0.15rem 0.75rem rgba(0, 0, 0, 0.05);
+        background-color: #fff;
+    }
+    </style>
    <!--For Leave_Add -->
      <style>
 
@@ -77,8 +205,8 @@
 
 
 {% endblock %}
-<!-- Bootstrap Bundle JS (includes Popper.js for dropdowns) -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js" integrity="sha384-k6d4wzSIapyDyv1kpU366/PK5hCdSbCRGRCMv+eplOQJWyd1fbcAu9OCUj5zNLiq" crossorigin="anonymous"></script>
 <!-- jQuery -->
 <script src="{% static 'plugins/jquery/jquery.min.js' %}"></script>
 <!-- jQuery UI 1.11.4 -->
@@ -89,7 +217,7 @@
 </script>
 <!-- Bootstrap 4 -->
 <script src="{% static 'plugins/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
-<!-- ChartJS -->
+
 <script src="{% static 'plugins/chart.js/Chart.min.js' %}"></script>
 <!-- Sparkline -->
 <script src="{% static 'plugins/sparklines/sparkline.js' %}"></script>
@@ -129,7 +257,60 @@
 <script src="{% static 'plugins/datatables-buttons/js/buttons.colVis.min.js' %}"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 
+<!--For Project Add Validation -->
+<script>
+$(document).ready(function () {
+    $("#addProjectForm").submit(function (event) {
+        event.preventDefault(); // Stop default form submit
 
+        $(".error-message").remove(); // Clear previous error messages
+
+        let formData = new FormData(this); // Create FormData object
+        let actionUrl = $(this).attr("action"); // Get form action URL
+
+        $.ajax({
+            type: "POST",
+            url: actionUrl,
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function (response) {
+                if (response.status === "success") {
+                    alert(response.message);
+                    window.location.href = "{% url 'Project:project_list' %}"; // Change as needed
+                }
+            },
+            error: function (xhr) {
+                if (xhr.responseJSON && xhr.responseJSON.errors) {
+                    let errors = xhr.responseJSON.errors;
+
+                    $.each(errors, function (key, message) {
+                        let field = $("[name='" + key + "']");
+                        if (field.length) {
+                            field.after(
+                                "<small class='text-danger error-message'>" + message + "</small>"
+                            );
+                        }
+                    });
+                } else {
+                    alert("Something went wrong. Please try again.");
+                }
+            }
+        });
+    });
+});
+</script>
+
+<!--For Rejection reason -->
+<script>
+  function showRejectReason(reason) {
+    if (reason) {
+      alert(reason);
+    } else {
+      alert("No rejection reason provided.");
+    }
+  }
+</script>
 
 <!--For Leave list Approved for status -->
 <script>
@@ -233,6 +414,7 @@ $(document).ready(function() {
         // Clear previous error messages
         $('.error-message').remove();
         $('.form-control, .form-select').removeClass('is-invalid');
+        $('.form-check-input').removeClass('is-invalid');
 
         $.ajax({
             url: $(this).attr('action'),
@@ -255,9 +437,16 @@ $(document).ready(function() {
                     const errors = xhr.responseJSON.errors || {};
                     for (const field in errors) {
                         const $input = $(`[name="${field}"]`);
+
                         if ($input.length) {
-                            $input.addClass('is-invalid');
-                            $input.after(`<div class="error-message text-danger">${errors[field]}</div>`);
+                            if ($input.attr('type') === 'radio' || $input.attr('type') === 'checkbox') {
+                                // Add error to the entire group for radios/checkboxes
+                                $input.closest('.mb-3').append(`<div class="error-message text-danger">${errors[field]}</div>`);
+                                $input.addClass('is-invalid');
+                            } else {
+                                $input.addClass('is-invalid');
+                                $input.after(`<div class="error-message text-danger">${errors[field]}</div>`);
+                            }
                         } else {
                             alert(`${field}: ${errors[field]}`);
                         }
@@ -270,6 +459,7 @@ $(document).ready(function() {
     });
 });
 </script>
+
 <!--For Applicable Tab in leave type Add -->
 <script>
   document.addEventListener("DOMContentLoaded", function () {
@@ -594,30 +784,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 });
-
 </script>
-$.ajax({
-  type: "POST",
-  url: "/login-user/",
-  data: {
-    Email: $("#email").val(),
-    PWD: $("#password").val(),
-    csrfmiddlewaretoken: $("input[name='csrfmiddlewaretoken']").val(),
-  },
-  success: function(response) {
-    window.location.href = response.redirect_url;
-  },
-  error: function(xhr) {
-    let errors = xhr.responseJSON;
-    if (errors.email_error) {
-      $("#email_error").text(errors.email_error);
-    }
-    if (errors.password_error) {
-      $("#password_error").text(errors.password_error);
-    }
-  }
-});
-<!--end login logic-->
 
 </body>
 </html>

@@ -18,6 +18,8 @@ from datetime import datetime, timedelta
 from django.utils import timezone
 from django.contrib import messages
 from django.shortcuts import render
+from django.views.decorators.csrf import csrf_protect
+
 from .models import EmployeeBISP, Leave, LeaveType, Designation, Department, HandbookPDF, \
     HandbookAcknowledgement  # Import your Employee model
 from openpyxl import Workbook
@@ -26,55 +28,182 @@ from openpyxl import Workbook
 
 # Create your views here.
 def Manager(request):
-    return render(request,'admin_templates/index.html',)
+    if request.session.get('role')  != "Manager":
+        return redirect("Login")
+
+    employee_id = request.session.get('employee_id')
+    if not employee_id:
+        return redirect("Login_user_page")
+
+    # Get employee instance
+    try:
+        employee = EmployeeBISP.objects.get(id=employee_id)
+    except EmployeeBISP.DoesNotExist:
+        return redirect("Login_user_page")
+
+    # Get all leaves taken by this employee (optional: filter if needed)
+    leaves = Leave.objects.filter(employee=employee).order_by('-start_date')
+
+    # Count total employees in organization
+    total_employees = EmployeeBISP.objects.count()
+
+    # Percentage calculations (safe from division by zero)
+    if employee.total_leave:
+        availed_percentage = (employee.availed_leave / employee.total_leave) * 100
+        remaining_percentage = (employee.remaining_leave / employee.total_leave) * 100
+        total_percentage = 100  # Always 100%
+    else:
+        availed_percentage = remaining_percentage = total_percentage = 0
+
+    return render(request,'admin_templates/index.html',{
+        'leaves': leaves,
+        'Total_emp': total_employees,
+        'employee': employee,
+        'availed_percentage': round(availed_percentage),
+        'remaining_percentage': round(remaining_percentage),
+        'total_percentage': round(total_percentage),
+    })
 
 def Hr(request):
-    return render(request,'admin_templates/hr_dashboard.html',)
+    # Ensure only Administrator can access
+    if request.session.get('role') != "Administrator":
+        return redirect("Login_user_page")
+
+    employee_id = request.session.get('employee_id')
+    if not employee_id:
+        return redirect("Login_user_page")
+
+    # Get employee instance
+    try:
+        employee = EmployeeBISP.objects.get(id=employee_id)
+    except EmployeeBISP.DoesNotExist:
+        return redirect("Login_user_page")
+
+    # Get all leaves taken by this employee (optional: filter if needed)
+    leaves = Leave.objects.filter(employee=employee).order_by('-start_date')
+
+    # Count total employees in organization
+    total_employees = EmployeeBISP.objects.count()
+
+    # Percentage calculations (safe from division by zero)
+    if employee.total_leave:
+        availed_percentage = (employee.availed_leave / employee.total_leave) * 100
+        remaining_percentage = (employee.remaining_leave / employee.total_leave) * 100
+        total_percentage = 100  # Always 100%
+    else:
+        availed_percentage = remaining_percentage = total_percentage = 0
+
+    return render(request, 'admin_templates/hr_dashboard.html', {
+        'leaves': leaves,
+        'Total_emp': total_employees,
+        'employee': employee,
+        'availed_percentage': round(availed_percentage),
+        'remaining_percentage': round(remaining_percentage),
+        'total_percentage': round(total_percentage),
+    })
+
 
 def Employee(request):
-    return render(request,'admin_templates/Emp_dashboard.html',)
+    if request.session.get('role') != "Employee":
+        return redirect("Login_user_page")
+
+    employee_id = request.session.get('employee_id')
+    if not employee_id:
+        return redirect("Login_user_page")
+
+    # Get employee instance
+    try:
+        employee = EmployeeBISP.objects.get(id=employee_id)
+    except EmployeeBISP.DoesNotExist:
+        return redirect("Login_user_page")
+
+    # Get all leaves taken by this employee (optional: filter if needed)
+    leaves = Leave.objects.filter(employee=employee).order_by('-start_date')
+
+    # Count total employees in organization
+    total_employees = EmployeeBISP.objects.count()
+
+    # Percentage calculations (safe from division by zero)
+    if employee.total_leave:
+        availed_percentage = (employee.availed_leave / employee.total_leave) * 100
+        remaining_percentage = (employee.remaining_leave / employee.total_leave) * 100
+        total_percentage = 100  # Always 100%
+    else:
+        availed_percentage = remaining_percentage = total_percentage = 0
+
+    return render(request,'admin_templates/Emp_dashboard.html',{
+        'leaves': leaves,
+        'Total_emp': total_employees,
+        'employee': employee,
+        'availed_percentage': round(availed_percentage),
+        'remaining_percentage': round(remaining_percentage),
+        'total_percentage': round(total_percentage),
+    })
 
 def Profile(request):
+    if not request.session.get('employee_id'):
+        return redirect('Login_user_page')
     return render(request,'admin_templates/profile.html')
 
 def Project(request):
+    if not request.session.get('employee_id'):
+        return redirect('Login_user_page')
     return render(request,'admin_templates/project.html')
 
 def Project_add(request):
+    if not request.session.get('employee_id'):
+        return redirect('Login_user_page')
     return render(request,'admin_templates/project-add.html')
 
 def Project_detail(request):
+    if not request.session.get('employee_id'):
+        return redirect('Login_user_page')
     return render(request,'admin_templates/project-detail.html')
 
 def Project_edit(request):
+    if not request.session.get('employee_id'):
+        return redirect('Login_user_page')
     return render(request,'admin_templates/project-edit.html')
 
 def Forget_pwd(request):
+    if not request.session.get('employee_id'):
+        return redirect('Login_user_page')
     return render(request,'admin_templates/forgot-password.html')
 
 def Contact(request):
+    if not request.session.get('employee_id'):
+        return redirect('Login_user_page')
     return render(request,'admin_templates/contacts.html')
 
 def Register(request):
+    if not request.session.get('employee_id'):
+        return redirect('Login_user_page')
     return render(request,'admin_templates/register.html')
 
-def Login(request):
+def Login_page(request):
     return render(request,'admin_templates/login.html')
 
 def Logout(request):
     logout(request)
+    request.session.flush()
     return render(request,'admin_templates/login.html')
 
 def Learning_Video(request):
+    if not request.session.get('employee_id'):
+        return redirect('Login_user_page')
     return render(request,'admin_templates/Learning_Video.html')
 
 #Show Leave List for Team members ID-12
 def Leave_list_approved(request):
+    if not request.session.get('employee_id'):
+        return redirect('Login_user_page')
     leave = EmployeeBISP.objects.all()
     return render(request,'leave_templates/Leave_list_approved.html',{'employees': leave})
 
 #ID -12
 def update_leave_approve(request, leave_id):
+    if not request.session.get('employee_id'):
+        return redirect('Login_user_page')
     leave = get_object_or_404(Leave, id=leave_id)
     employee = leave.employee  # Get the employee related to this leave
     leave_days = leave.leave_days  # Get the number of days the leave spans
@@ -118,6 +247,8 @@ def update_leave_approve(request, leave_id):
 
 
 def handdbook(request):
+    if not request.session.get('employee_id'):
+        return redirect('Login_user_page')
     pdfs = HandbookPDF.objects.all().order_by('-uploaded_at')
     context = {
         'pdf_list': [
@@ -133,6 +264,8 @@ def handdbook(request):
     return render(request,'admin_templates/Handbook.html',context)
 
 def handbook_report(request):
+    if not request.session.get('employee_id'):
+        return redirect('Login_user_page')
     latest_pdf = HandbookPDF.objects.filter(is_active=True).order_by('-uploaded_at').first()
     employees = EmployeeBISP.objects.all()
 
@@ -148,6 +281,8 @@ def handbook_report(request):
 
 
 def handbook_Indivi_report(request, pdf_id):
+    if not request.session.get('employee_id'):
+        return redirect('Login_user_page')
     pdf = HandbookPDF.objects.get(id=pdf_id)
     acknowledgements = HandbookAcknowledgement.objects.filter(pdf=pdf).select_related('employee')
 
@@ -157,6 +292,8 @@ def handbook_Indivi_report(request, pdf_id):
     })
 
 def handbook_employee(request):
+    if not request.session.get('employee_id'):
+        return redirect('Login_user_page')
     employee = get_object_or_404(EmployeeBISP, email=request.user.email)
     latest_pdf = HandbookPDF.objects.filter(is_active=True).order_by('-uploaded_at').first()
 
@@ -175,6 +312,8 @@ def handbook_employee(request):
 
 
 def Leave_Type_Add(request):
+    if not request.session.get('employee_id'):
+        return redirect('Login_user_page')
     departments = Department.objects.all()
     employees = EmployeeBISP.objects.all()
     return render(request,'leave_templates/Leave_Type_Add.html', {
@@ -184,6 +323,8 @@ def Leave_Type_Add(request):
 
 #For Changing Status
 def change_leave_status(request, id, status):
+    if not request.session.get('employee_id'):
+        return redirect('Login_user_page')
     leave_type = get_object_or_404(LeaveType, id=id)
 
     if status in ['active', 'inactive', 'hidden']:
@@ -194,6 +335,8 @@ def change_leave_status(request, id, status):
 
 #For Leave Detail view
 def leave_detail_view(request):
+    if not request.session.get('employee_id'):
+        return redirect('Login_user_page')
     # Get all leave types
     leave_types = LeaveType.objects.all()
 
@@ -210,22 +353,30 @@ def leave_detail_view(request):
     return render(request, 'leave_templates/Leave_detail_view.html', context)
 
 def EmpList(request):
+    if not request.session.get('employee_id'):
+        return redirect('Login_user_page')
     employees = EmployeeBISP.objects.all()
     return render(request,'admin_templates/Employee_List.html',{'employees': employees})
 
 #For Delete Employee with ID
 def delete_employee(request, id):
+    if not request.session.get('employee_id'):
+        return redirect('Login_user_page')
     employee = get_object_or_404(EmployeeBISP, id=id)
     employee.delete()
     return redirect('Emplist')
 
 #For Rendering Register.html Page
 def update_emp_page(request,id):
+    if not request.session.get('employee_id'):
+        return redirect('Login_user_page')
     employee = get_object_or_404(EmployeeBISP, id=id)
     return render(request,'admin_templates/register.html', {'employee': employee})
 
 #For Update Employee with ID
 def update_employee(request, id):
+    if not request.session.get('employee_id'):
+        return redirect('Login_user_page')
     employee = get_object_or_404(EmployeeBISP, id=id)
     if request.method == 'POST':
         errors = {}
@@ -374,6 +525,8 @@ ALLOWED_DEPARTMENT = ["HR", "Marketing", "Sales", "Software"]
 MAX_DESIGNATION_LENGTH = 50
 
 def register_user(request):
+    if not request.session.get('employee_id'):
+        return redirect('Login_user_page')
     if request.method == "POST":
         name = request.POST.get('Full_Name', '').strip()
         email = request.POST.get('Email', '').strip()
@@ -499,10 +652,25 @@ def register_user(request):
     return render(request, 'admin_templates/register.html')
 
 
+def show_login_page(request):
+    # Check if session already active
+    role = request.session.get('role')
+
+    if role == "Administrator":
+        return redirect('/Hrpanel')
+    elif role == "Employee":
+        return redirect('/Emppanel')
+    elif role == "Manager":
+        return redirect('/Adminpanel')
+
+    # If no session, show login page
+    return render(request, 'admin_templates/login.html')
+
 #For Login
+@csrf_protect
 def Login_user(request):
     if request.method != "POST":
-        return render(request, "admin_templates/login.html", {"error": "Invalid request method."})
+        return JsonResponse({"error": "Invalid request"}, status=400)
 
     email = request.POST.get("Email", "").strip()
     password = request.POST.get("PWD", "").strip()
@@ -513,46 +681,50 @@ def Login_user(request):
     if not password:
         errors["password_error"] = "Password is required."
     if errors:
-        return render(request, "login.html", errors)
+        return JsonResponse(errors, status=400)
 
     user = EmployeeBISP.objects.filter(email=email).first()
     if not user:
-        return render(request, "login.html", {"email_error": "No account found with this email."})
+        return JsonResponse({"email_error": "No account found with this email."}, status=401)
 
     if not check_password(password, user.password):
-        return render(request, "login.html", {"password_error": "Incorrect password."})
+        return JsonResponse({"password_error": "Incorrect password."}, status=401)
 
+    #Fake Django User Login
+    # Create a dummy Django user (or link with one if you already do)
     django_user, created = User.objects.get_or_create(username=user.email, email=user.email)
     login(request, django_user)
 
+    # Extend session expiry (set persistent session)
+    request.session.set_expiry(60 * 60 * 24 * 30)  # 30 days
+
+    # Set common session data
     request.session['employee_id'] = user.id
     request.session['employee_name'] = user.name
-    request.session['email'] = user.email
-    request.session['role'] = user.role
+    request.session['email']=user.email
+    request.session['role']=user.role
     request.session['designation'] = user.designation.title
     request.session['total_leave'] = user.total_leave
     request.session['availed_leave'] = user.availed_leave
-    request.session['remain_leave'] = user.remaining_leave
-    request.session['Currenttime'] = datetime.today().date().isoformat()
-    request.session['active_role'] = user.role
+    request.session['remain_leave'] = user. remaining_leave
+    request.session['Currenttime'] =datetime.today().date().isoformat()
 
     try:
         request.session['ProfileImage'] = user.profile_picture.url
     except Exception:
-        request.session['ProfileImage'] = ""
+        request.session['ProfileImage'] = ""  # Fallback if no profile image is available
 
+    # Determine redirect URL based on the user's designation
     if user.role == "Administrator":
-        return render(request, "admin_templates/hr_dashboard.html",{'user':user})
-    elif user.role == "Employee":
-        return render(request, "admin_templates/Emp_dashboard.html",{'user':user})
-    elif user.role == "Manager":
-        return render(request, "admin_templates/index.html",{'user':user})
+        redirect_url = "/Hrpanel"
+    elif user.role == "Employee" :
+        redirect_url = "/Emppanel"
+    elif user.role== "Manager":
+        redirect_url = "/Adminpanel"
     else:
-        return render(request, "admin_templates/login.html", {"error": "Unauthorized role"})
+        return JsonResponse({"error": "Unauthorized role"}, status=403)
 
     return JsonResponse({"redirect_url": redirect_url}, status=200)
-
-
 
 def generate_random_password(length=8):
     """Generate a random password of given length"""
@@ -593,6 +765,8 @@ def Forget_passord(request):
 # =======================================================================================================
 
 def leave_Add_page(request):
+    if not request.session.get('employee_id'):
+        return redirect('Login_user_page')
     id = request.session.get('employee_id')
 
     try:
@@ -616,6 +790,8 @@ def leave_Add_page(request):
 
 
 def Apply_leave(request):
+    if not request.session.get('employee_id'):
+        return redirect('Login_user_page')
     errors = {}
     id = request.session.get('employee_id')
     half_day_name=None
@@ -767,6 +943,8 @@ def Apply_leave(request):
 
 #Show Leave List for particular user
 def Leave_list(request):
+    if not request.session.get('employee_id'):
+        return redirect('Login_user_page')
     user = request.user  # This is the actual User object
     try:
         # Get the employee record based on the logged-in user's email
@@ -819,6 +997,8 @@ def Withdraw_leave(request, leave_id):
     return redirect('Leavelist')
 
 def add_leave_type(request):
+    if not request.session.get('employee_id'):
+        return redirect('Login_user_page')
     if request.method == 'POST':
         errors = {}
 
@@ -874,14 +1054,25 @@ def add_leave_type(request):
         if employee_type == 'individual':
             department_id = request.POST.get('department')
             employee_id = request.POST.get('employee')
+            gender = request.POST.get('gender')
+            marital_status = request.POST.get('marital_status')
 
-            if department_id:
+            # Validation
+            if not gender:
+                errors['gender'] = "Gender is required for individual employees."
+            if not marital_status:
+                errors['marital_status'] = "Marital status is required for individual employees."
+            if not department_id:
+                errors['department'] = "Department is required for individual employees."
+            else:
                 try:
                     department = Department.objects.get(id=department_id)
                 except Department.DoesNotExist:
                     errors['department'] = "Invalid department selected."
 
-            if employee_id:
+            if not employee_id:
+                errors['employee'] = "Employee is required for individual employees."
+            else:
                 try:
                     employee = EmployeeBISP.objects.get(id=employee_id)
                 except EmployeeBISP.DoesNotExist:
@@ -916,10 +1107,9 @@ def add_leave_type(request):
     return render(request, 'leave_templates/Leave_Type_Add.html')
 
 #For Handbook PDF
-
-
-
 def uploadPDF(request):
+    if not request.session.get('employee_id'):
+        return redirect('Login_user_page')
     if request.method == 'POST' and request.FILES.get('pdf_file'):
         file = request.FILES['pdf_file']
         instance = HandbookPDF.objects.create(file=file, is_active=True)  # Save model instance
@@ -942,6 +1132,8 @@ def uploadPDF(request):
 
 
 def acknowledge_handbook(request, pdf_id):
+    if not request.session.get('employee_id'):
+        return redirect('Login_user_page')
     employee = get_object_or_404(EmployeeBISP, email=request.user.email)
     pdf = get_object_or_404(HandbookPDF, id=pdf_id)
 
@@ -960,6 +1152,8 @@ def acknowledge_handbook(request, pdf_id):
 
 #For download handbook report data in excel form
 def export_to_excel_handbook(request):
+    if not request.session.get('employee_id'):
+        return redirect('Login_user_page')
     # Create an Excel workbook and sheet
     wb = Workbook()
     ws = wb.active

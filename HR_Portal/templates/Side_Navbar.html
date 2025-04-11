@@ -4,7 +4,7 @@
 
   <!-- Preloader -->
   <div class="preloader flex-column justify-content-center align-items-center">
-    <img class="animation__shake" src="{% static 'img/AdminLTELogo.png' %}" alt="AdminLTELogo" height="60" width="60">
+    <img class="animation__shake" src="{% static 'img/BISP-BG.png' %}" alt="AdminLTELogo" height="180" width="180">
   </div>
 
   <!-- Navbar -->
@@ -141,8 +141,8 @@
   <aside class="main-sidebar sidebar-dark-primary elevation-4">
     <!-- Brand Logo -->
     <a href="{% url 'Adminpanel' %}" class="brand-link">
-      <img src="{% static 'img/BISP.png' %}" alt="AdminLTE Logo"  class="brand-image img-thumbnail elevation-3" style="opacity: .8">
-      <span class="brand-text font-weight-light">{{}}</span>
+      <img src="{% static 'img/BISP-BG.png' %}" alt="AdminLTE Logo"height="180" width="180"   style="opacity: .8">
+
     </a>
 
     <!-- Sidebar -->
@@ -154,8 +154,8 @@
           " alt="User Image">
         </div>
         <div class="info">
-          <a href="#" class="d-block">{{user.employee_name}}</a>
-          <a href="#" class="d-block">{{}}</a>
+          <a href="#" class="d-block">{{request.session.employee_name}}</a>
+          <a href="#" class="d-block">{{request.session.designation.title}}</a>
         </div>
       </div>
 
@@ -175,22 +175,22 @@
    <nav class="mt-2">
   <ul class="nav nav-pills nav-sidebar flex-column " data-widget="treeview" role="menu" data-accordion="false">
 
-    {# Dashboard link varies based on designation #}
-    {% if user.role == "Administrator" %}
+    {# Dashboard link varies based on ROLE #}
+    {% if request.session.role == "Administrator" %}
       <li class="nav-item">
         <a href="{% url 'Hrpanel' %}" class="nav-link">
           <i class="nav-icon fas fa-tachometer-alt"></i>
           <p>Dashboard</p>
         </a>
       </li>
-    {% elif  user.role  == "Employee" %}
+    {% elif request.session.role == "Employee" %}
       <li class="nav-item">
         <a href="{% url 'Emppanel' %}" class="nav-link">
           <i class="nav-icon fas fa-tachometer-alt"></i>
           <p>Dashboard</p>
         </a>
       </li>
-    {% elif user.role == "Manager" %}
+    {% elif request.session.role == "Manager" %}
       <li class="nav-item">
         <a href="{% url 'Adminpanel' %}" class="nav-link">
           <i class="nav-icon fas fa-tachometer-alt"></i>
@@ -202,7 +202,7 @@
     {# Common navigation items that appear for all users #}
       <!--Project and Task-->
     <li class="nav-item">
-      <a href="pages/widgets.html" class="nav-link">
+      <a href="{% url 'Project:project_list' %}" class="nav-link">
         <i class="nav-icon fas fa-th"></i>
         <p>Project</p>
       </a>
@@ -224,7 +224,7 @@
       </a>
       <ul class="nav nav-treeview">
           <!-- Team Record -->
-          {% if user.role == "Administrator" %}
+          {% if request.session.role == "Administrator"%}
           <li class="nav-item">
               <a href="#" class="nav-link">
                   <i class="far fa-circle nav-icon"></i>
@@ -287,7 +287,7 @@
             <p>Apply Leave</p>
           </a>
       </li>
-          {% if user.role == "Administrator" %}
+          {% if request.session.role == "Administrator" %}
             <li class="nav-item">
              <a href="{% url 'LeavelistApproved' %}" class="nav-link">
             <i class="far fa-circle nav-icon"></i>
@@ -301,7 +301,7 @@
 
       <!--Report-->
     {# Additional sections can be controlled similarly #}
-    {% if user.role == "Administrator" %}
+    {% if request.session.role == "Administrator"%}
     <li class="nav-item">
       <a href="#" class="nav-link">
         <i class="nav-icon fas fa-bars"></i>
@@ -366,7 +366,7 @@
 
       <!--Configuration-->
     {# Additional sections can be controlled similarly #}
-    {% if user.role == "Administrator" or user.role ==  "Manager"   %}
+    {% if request.session.role == "Administrator" or request.session.role == "Manager"   %}
     <li class="nav-item">
       <a href="#" class="nav-link">
         <i class="nav-icon fas fa-gear"></i>
@@ -456,3 +456,4 @@
 
     </div>
   </aside>
+</div>

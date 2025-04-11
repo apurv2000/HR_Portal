@@ -37,7 +37,7 @@
 
               <div class="info-box-content">
                 <span class="info-box-text">Total Employee</span>
-                <span class="info-box-number">50</span>
+                <span class="info-box-number">{{Total_emp}}</span>
 
                 <div class="progress">
                   <div class="progress-bar" style="width: 70%"></div>
@@ -56,14 +56,15 @@
               <span class="info-box-icon"><i class="fas fa-umbrella-beach"></i></span>
 
               <div class="info-box-content">
-                <span class="info-box-text">Total Holiday</span>
-                <span class="info-box-number">45</span>
+                <span class="info-box-text">Remaining Leave</span>
+                <span class="info-box-number">{{ employee.remaining_leave}}</span>
 
+                <!-- Remaining Leave -->
                 <div class="progress">
-                  <div class="progress-bar" style="width: 70%"></div>
+                  <div class="progress-bar bg-success" style="width: {{ remaining_percentage }}%"></div>
                 </div>
                 <span class="progress-description">
-                  70% Increase in 30 Days
+                  {{ remaining_percentage }}% Remaining Leave
                 </span>
               </div>
               <!-- /.info-box-content -->
@@ -77,14 +78,15 @@
 
               <div class="info-box-content">
                 <span class="info-box-text">Total Leave</span>
-                <span class="info-box-number">41</span>
+                <span class="info-box-number">{{ employee.total_leave }}</span>
 
-                <div class="progress">
-                  <div class="progress-bar" style="width: 70%"></div>
-                </div>
-                <span class="progress-description">
-                  70% Increase in 30 Days
-                </span>
+               <!-- Total Leave (Always 100%) -->
+                  <div class="progress">
+                    <div class="progress-bar bg-info" style="width: {{ total_percentage }}%"></div>
+                  </div>
+                  <span class="progress-description">
+                    {{ total_percentage }}% Total Leave Capacity
+                  </span>
               </div>
               <!-- /.info-box-content -->
             </div>
@@ -97,14 +99,15 @@
 
               <div class="info-box-content">
                 <span class="info-box-text">Availed Leave</span>
-                <span class="info-box-number">41</span>
+                <span class="info-box-number">{{ employee.availed_leave }}</span>
 
-                <div class="progress">
-                  <div class="progress-bar" style="width: 70%"></div>
-                </div>
-                <span class="progress-description">
-                  70% Increase in 30 Days
-                </span>
+               <!-- Availed Leave -->
+                  <div class="progress">
+                    <div class="progress-bar bg-warning" style="width: {{ availed_percentage }}%"></div>
+                  </div>
+                  <span class="progress-description">
+                    {{ availed_percentage }}% Availed Leave
+                  </span>
               </div>
               <!-- /.info-box-content -->
             </div>
