@@ -14,7 +14,13 @@
         <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
       </li>
       <li class="nav-item d-none d-sm-inline-block">
-        <a href="index3.html" class="nav-link">Home</a>
+            {% if request.session.role == "Administrator" %}
+           <a href="{% url 'Hrpanel' %}" class="nav-link" >Home</a>
+           {% elif request.session.role == "Employee" %}
+           <a href="{% url 'Emppanel' %}" class="nav-link" >Home</a>
+            {% elif request.session.role == "Manager" %}
+           <a href="{% url 'Adminpanel' %}" class="nav-link" >Home</a>
+          {% endif %}
       </li>
       <li class="nav-item d-none d-sm-inline-block">
         <a href="#" class="nav-link">Contact</a>
@@ -141,7 +147,7 @@
   <aside class="main-sidebar sidebar-dark-primary elevation-4">
     <!-- Brand Logo -->
     <a href="{% url 'Adminpanel' %}" class="brand-link">
-      <img src="{% static 'img/BISP-BG.png' %}" alt="AdminLTE Logo"height="180" width="180"   style="opacity: .8">
+      <img src="{% static 'img/BISP-BG.png' %}" alt="AdminLTE Logo" height="180" width="180"   style="opacity: .8">
 
     </a>
 
@@ -208,7 +214,7 @@
       </a>
     </li>
     <li class="nav-item">
-      <a href="#" class="nav-link">
+      <a href="{% url 'Project:task_list' %}" class="nav-link">
         <i class="nav-icon fas fa-copy"></i>
         <p>Task</p>
       </a>

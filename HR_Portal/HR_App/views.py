@@ -197,8 +197,16 @@ def Learning_Video(request):
 def Leave_list_approved(request):
     if not request.session.get('employee_id'):
         return redirect('Login_user_page')
-    leave = EmployeeBISP.objects.all()
-    return render(request,'leave_templates/Leave_list_approved.html',{'employees': leave})
+
+    # Get all employees ordered by descending ID (last created first)
+    leave = EmployeeBISP.objects.prefetch_related(
+        Prefetch(
+            'leave_set',
+            queryset=Leave.objects.order_by('-apply_date', '-id')
+        )
+    ).order_by('-id')  # Last added employee first
+
+    return render(request, 'leave_templates/Leave_list_approved.html', {'employees': leave})
 
 #ID -12
 def update_leave_approve(request, leave_id):
@@ -951,7 +959,7 @@ def Leave_list(request):
         current_employee = EmployeeBISP.objects.prefetch_related(
             Prefetch(
                 'leave_set',
-                queryset=Leave.objects.order_by('apply_date')#Pending
+                queryset=Leave.objects.order_by('-apply_date','-id')#Pending
             )
         ).get(email=user.email)
     except EmployeeBISP.DoesNotExist:
