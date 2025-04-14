@@ -37,7 +37,6 @@
   <!-- Statistics -->
   <link rel="stylesheet" href="{% static 'css/statistics.css' %}">
 
-
     <!--For Project Detail Page-->
       <style>
         .info-card {
@@ -258,6 +257,20 @@
 <script src="{% static 'plugins/bs-custom-file-input/bs-custom-file-input.min.js' %}"></script>
 <script src="{% static 'plugins/datatables-buttons/js/buttons.colVis.min.js' %}"></script>
 <script src="https://cdn.tailwindcss.com"></script>
+
+
+
+<!--For display dynamic remaining leave in leave_add.html-->
+<script type="text/javascript">
+    function updateRemainingLeave() {
+        var selectElement = document.getElementById("leavetype");
+        var selectedOption = selectElement.options[selectElement.selectedIndex];
+        var remainingLeave = selectedOption.getAttribute("data-remaining-leave");
+
+        // Set the remaining leave input value to the selected leave type's remaining leave
+        document.getElementById("remainleave").value = remainingLeave;
+    }
+</script>
 
 <!-- Script to Handle Active Option in task detail dropdown-->
 <script>

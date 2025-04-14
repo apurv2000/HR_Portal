@@ -13,21 +13,19 @@
     <div class="container-fluid">
       <div class="row mb-2">
         <div class="col-sm-6">
-           <nav aria-label="breadcrumb">
-    <ol class="breadcrumb bg-light px-3 py-2">
-      <li class="breadcrumb-item"><a href="#" class="text-primary">Dashboard</a></li>
-      <li class="breadcrumb-item active" aria-current="page">Handbook</li>
-    </ol>
-  </nav>
 
         </div>
 
       </div>
     </div>
   </section>
+     <nav aria-label="breadcrumb">
+    <ol class="breadcrumb bg-light px-3 py-2">
+      <li class="breadcrumb-item"><a href="#" class="text-primary">Dashboard</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Handbook</li>
+    </ol>
+  </nav>
 <div class="container py-4">
-
-  <h4 class="mb-3">Handbook Pdf-</h4>
 
   {% if request.session.role == "Administrator" %}
   <!-- Upload Section -->

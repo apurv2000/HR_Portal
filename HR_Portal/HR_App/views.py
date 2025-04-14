@@ -28,41 +28,16 @@ from openpyxl import Workbook
 
 # Create your views here.
 def Manager(request):
-    if request.session.get('role')  != "Manager":
+    if request.session.get('role') != "Manager":
         return redirect("Login")
 
     employee_id = request.session.get('employee_id')
     if not employee_id:
         return redirect("Login_user_page")
 
-    # Get employee instance
-    try:
-        employee = EmployeeBISP.objects.get(id=employee_id)
-    except EmployeeBISP.DoesNotExist:
-        return redirect("Login_user_page")
 
-    # Get all leaves taken by this employee (optional: filter if needed)
-    leaves = Leave.objects.filter(employee=employee).order_by('-start_date')
+    return render(request, 'admin_templates/index.html')
 
-    # Count total employees in organization
-    total_employees = EmployeeBISP.objects.count()
-
-    # Percentage calculations (safe from division by zero)
-    if employee.total_leave:
-        availed_percentage = (employee.availed_leave / employee.total_leave) * 100
-        remaining_percentage = (employee.remaining_leave / employee.total_leave) * 100
-        total_percentage = 100  # Always 100%
-    else:
-        availed_percentage = remaining_percentage = total_percentage = 0
-
-    return render(request,'admin_templates/index.html',{
-        'leaves': leaves,
-        'Total_emp': total_employees,
-        'employee': employee,
-        'availed_percentage': round(availed_percentage),
-        'remaining_percentage': round(remaining_percentage),
-        'total_percentage': round(total_percentage),
-    })
 
 def Hr(request):
     # Ensure only Administrator can access
@@ -73,34 +48,8 @@ def Hr(request):
     if not employee_id:
         return redirect("Login_user_page")
 
-    # Get employee instance
-    try:
-        employee = EmployeeBISP.objects.get(id=employee_id)
-    except EmployeeBISP.DoesNotExist:
-        return redirect("Login_user_page")
 
-    # Get all leaves taken by this employee (optional: filter if needed)
-    leaves = Leave.objects.filter(employee=employee).order_by('-start_date')
-
-    # Count total employees in organization
-    total_employees = EmployeeBISP.objects.count()
-
-    # Percentage calculations (safe from division by zero)
-    if employee.total_leave:
-        availed_percentage = (employee.availed_leave / employee.total_leave) * 100
-        remaining_percentage = (employee.remaining_leave / employee.total_leave) * 100
-        total_percentage = 100  # Always 100%
-    else:
-        availed_percentage = remaining_percentage = total_percentage = 0
-
-    return render(request, 'admin_templates/hr_dashboard.html', {
-        'leaves': leaves,
-        'Total_emp': total_employees,
-        'employee': employee,
-        'availed_percentage': round(availed_percentage),
-        'remaining_percentage': round(remaining_percentage),
-        'total_percentage': round(total_percentage),
-    })
+    return render(request, 'admin_templates/hr_dashboard.html')
 
 
 def Employee(request):
@@ -117,28 +66,9 @@ def Employee(request):
     except EmployeeBISP.DoesNotExist:
         return redirect("Login_user_page")
 
-    # Get all leaves taken by this employee (optional: filter if needed)
-    leaves = Leave.objects.filter(employee=employee).order_by('-start_date')
 
-    # Count total employees in organization
-    total_employees = EmployeeBISP.objects.count()
 
-    # Percentage calculations (safe from division by zero)
-    if employee.total_leave:
-        availed_percentage = (employee.availed_leave / employee.total_leave) * 100
-        remaining_percentage = (employee.remaining_leave / employee.total_leave) * 100
-        total_percentage = 100  # Always 100%
-    else:
-        availed_percentage = remaining_percentage = total_percentage = 0
-
-    return render(request,'admin_templates/Emp_dashboard.html',{
-        'leaves': leaves,
-        'Total_emp': total_employees,
-        'employee': employee,
-        'availed_percentage': round(availed_percentage),
-        'remaining_percentage': round(remaining_percentage),
-        'total_percentage': round(total_percentage),
-    })
+    return render(request,'admin_templates/Emp_dashboard.html')
 
 def Profile(request):
     if not request.session.get('employee_id'):
@@ -209,12 +139,60 @@ def Leave_list_approved(request):
     return render(request, 'leave_templates/Leave_list_approved.html', {'employees': leave})
 
 #ID -12
+# def update_leave_approve(request, leave_id):
+#     if not request.session.get('employee_id'):
+#         return redirect('Login_user_page')
+#     leave = get_object_or_404(Leave, id=leave_id)
+#     employee = leave.employee  # Get the employee related to this leave
+#     leave_days = leave.leave_days  # Get the number of days the leave spans
+#
+#     if request.method == 'POST':
+#         status = request.POST.get('status')
+#         rejection_reason = request.POST.get('rejection_reason', None)
+#
+#         # Update the leave status
+#         leave.status = status
+#
+#         # Handle rejection reason if the status is 'Rejected'
+#         if status == 'Rejected' and rejection_reason:
+#             employee.availed_leave = max(0, employee.availed_leave - leave_days)
+#             employee.remaining_leave = min(employee.total_leave, employee.remaining_leave + leave_days)
+#             employee.save()
+#             leave.reject_reason = rejection_reason
+#             leave.reject_date = timezone.now()
+#
+#         # Handle when leave is approved
+#         elif status == 'Approved':
+#             if leave.start_date >= timezone.now().date():  # Ensure the leave date is in the past or today
+#                 # Adjust the employee's leave balance
+#                 employee.availed_leave = max(0, employee.availed_leave + leave_days)
+#                 employee.remaining_leave = max(0, employee.remaining_leave - leave_days)
+#
+#         # Save the updated leave record
+#         leave.save()
+#
+#         # Save the updated employee record
+#         employee.save()
+#
+#         # Show a success message
+#         messages.success(request, f"Leave status updated to {status}.")
+#
+#         # Redirect after the update
+#         return redirect('LeavelistApproved')
+#
+#     # In case of GET or invalid status, return to leave list or a relevant page
+#     return redirect('LeavelistApproved')
+#
+
 def update_leave_approve(request, leave_id):
     if not request.session.get('employee_id'):
         return redirect('Login_user_page')
+
     leave = get_object_or_404(Leave, id=leave_id)
     employee = leave.employee  # Get the employee related to this leave
     leave_days = leave.leave_days  # Get the number of days the leave spans
+    leave_type = leave.leave_type  # Get the leave type related to this leave
+    leave_type_instance = get_object_or_404(LeaveType, name=leave_type)  # Fetch the leave type instance
 
     if request.method == 'POST':
         status = request.POST.get('status')
@@ -225,24 +203,32 @@ def update_leave_approve(request, leave_id):
 
         # Handle rejection reason if the status is 'Rejected'
         if status == 'Rejected' and rejection_reason:
-            employee.availed_leave = max(0, employee.availed_leave - leave_days)
-            employee.remaining_leave = min(employee.total_leave, employee.remaining_leave + leave_days)
-            employee.save()
+            # Revert leave balance in LeaveType model if rejected
+            leave_type_instance.remaining_leave = min(leave_type_instance.total_leave,
+                                                      leave_type_instance.remaining_leave + leave_days)
+            leave_type_instance.availed_leave = max(0, leave_type_instance.availed_leave - leave_days)
+            leave_type_instance.save()
+
             leave.reject_reason = rejection_reason
             leave.reject_date = timezone.now()
 
         # Handle when leave is approved
         elif status == 'Approved':
-            if leave.start_date >= timezone.now().date():  # Ensure the leave date is in the past or today
-                # Adjust the employee's leave balance
-                employee.availed_leave = max(0, employee.availed_leave + leave_days)
-                employee.remaining_leave = max(0, employee.remaining_leave - leave_days)
+            if leave.start_date >= timezone.now().date():  # Ensure the leave date is in the future or today
+                # Adjust the employee's leave balance according to the leave type
+                if leave_type_instance.leave_type == 'Paid':
+                    # For paid leave, adjust the balance accordingly
+                    leave_type_instance.availed_leave = max(0, leave_type_instance.availed_leave + leave_days)
+                    leave_type_instance.remaining_leave = max(0, leave_type_instance.remaining_leave - leave_days)
+                elif leave_type_instance.leave_type == 'Unpaid':
+                    # For unpaid leave, no leave balance change but ensure proper records
+                    pass
 
         # Save the updated leave record
         leave.save()
 
-        # Save the updated employee record
-        employee.save()
+        # Save the updated leave type record (for availed/remaining leave adjustments)
+        leave_type_instance.save()
 
         # Show a success message
         messages.success(request, f"Leave status updated to {status}.")
@@ -712,9 +698,7 @@ def Login_user(request):
     request.session['email']=user.email
     request.session['role']=user.role
     request.session['designation'] = user.designation.title
-    request.session['total_leave'] = user.total_leave
-    request.session['availed_leave'] = user.availed_leave
-    request.session['remain_leave'] = user. remaining_leave
+
     request.session['Currenttime'] =datetime.today().date().isoformat()
 
     try:
@@ -803,6 +787,7 @@ def Apply_leave(request):
     errors = {}
     id = request.session.get('employee_id')
     half_day_name=None
+    leave_obj = None
 
     try:
         employee = EmployeeBISP.objects.get(id=id)
@@ -823,6 +808,7 @@ def Apply_leave(request):
         half_day = request.POST.get("halfday") == "on"
         comp_off = request.POST.get("compensatory_off") == "on"
         comp_off_reason = request.POST.get("compensatory_reason", "").strip()
+        print(f"Received leave type: '{leavetype}'")
 
         if not leavetype:
             errors["leavetype"] = "Please select a leave type."
@@ -833,9 +819,6 @@ def Apply_leave(request):
                     errors['Status'] = f"{leave_obj.name} leave is not active"
             except LeaveType.DoesNotExist:
                 errors["leavetype"] = "Invalid leave type selected."
-
-
-
 
         from_date, till_date = None, None
         if not fromdate or not tilldate:
@@ -857,60 +840,61 @@ def Apply_leave(request):
         if not reason:
             errors["reason"] = "Reason is required."
 
+        # Proceed with the rest of the logic only if leave_obj is valid
+        if leave_obj:
+            # Initialize leave days and half day choices
+            leave_days = 0
+            half_day_choices = {}
 
-        # Initialize leave days and half day choices
-        leave_days = 0
-        half_day_choices = {}
+            if from_date and till_date:
+                # Handle weekends and holidays as leave
+                current = from_date
+                while current <= till_date:
+                    key = f"halfday_option_{current}"
+                    choice = request.POST.get(key)
 
-        if from_date and till_date:
-            # Handle weekends and holidays as leave
-            current = from_date
-            while current <= till_date:
-                key = f"halfday_option_{current}"
-                choice = request.POST.get(key)
+                    # Determine if current day is a weekend (Saturday or Sunday)
+                    is_weekend = current.weekday() in [6]  # 5 is Saturday, 6 is Sunday
 
-                # Determine if current day is a weekend (Saturday or Sunday)
-                is_weekend = current.weekday() in [6]  # 5 is Saturday, 6 is Sunday
+                    # Check if it's a holiday (You would need a list of holidays or a holiday-checking function)
+                    is_holiday = False  # Replace with actual holiday-checking logic if needed
 
-                # Check if it's a holiday (You would need a list of holidays or a holiday-checking function)
-                is_holiday = False  # Replace with actual holiday-checking logic if needed
+                    # Determine if it's a leave day (weekend or holiday)
+                    is_leave_day = False
 
-                # Determine if it's a leave day (weekend or holiday)
-                is_leave_day = False
+                    if leave_obj.count_weekends_as_leave and is_weekend:
+                        is_leave_day = True
 
-                if leave_obj.count_weekends_as_leave and is_weekend:
-                    is_leave_day = True
+                    if leave_obj.count_holidays_as_leave and is_holiday:
+                        is_leave_day = True
 
-                if leave_obj.count_holidays_as_leave and is_holiday:
-                    is_leave_day = True
+                    # If the current day is a weekend or holiday and we shouldn't count it as leave
+                    if (leave_obj.count_weekends_as_leave and is_weekend) or (
+                            leave_obj.count_holidays_as_leave and is_holiday):
+                        # Skip weekends and holidays completely from leave counting
+                        current += timedelta(days=1)  # Move to the next day
+                        continue  # Skip this iteration (do not count it as leave)
 
-                # If the current day is a weekend or holiday and we shouldn't count it as leave
-                if (leave_obj.count_weekends_as_leave and is_weekend) or (
-                        leave_obj.count_holidays_as_leave and is_holiday):
-                    # Skip weekends and holidays completely from leave counting
-                    current += timedelta(days=1)  # Move to the next day
-                    continue  # Skip this iteration (do not count it as leave)
+                    # If a half-day is selected, count it as leave
+                    if choice == "first_half" or choice == "second_half":
+                        half_day_name = choice
+                        leave_days += 0.5
+                        half_day_choices[str(current)] = choice
+                    else:
+                        # Otherwise, count the day as a full leave day
+                        leave_days += 1
 
-                # If a half-day is selected, count it as leave
-                if choice == "first_half" or choice == "second_half":
-                    half_day_name=choice
-                    leave_days += 0.5
-                    half_day_choices[str(current)] = choice
-                else:
-                    # Otherwise, count the day as a full leave day
-                    leave_days += 1
+                    # Move to the next day
+                    current += timedelta(days=1)
 
-                # Move to the next day
-                current += timedelta(days=1)
+                print(f"Total leave days calculated: {leave_days}")
+                print("Half-day details:", half_day_choices)
 
-            print(f"Total leave days calculated: {leave_days}")
-            print("Half-day details:", half_day_choices)
-
-        # Check remaining leave
-        remaining_leave = employee.remaining_leave or 0
-        print(f"Remaining Leave: {remaining_leave}, Requested: {leave_days}")
-        if leave_days > remaining_leave:
-            errors["leave"] = f"Insufficient leave balance! You have {remaining_leave} days left."
+            # Check remaining leave
+            remaining_leave = leave_obj.remaining_leave or 0
+            print(f"Remaining Leave: {remaining_leave}, Requested: {leave_days}")
+            if leave_days > remaining_leave:
+                errors["leave"] = f"Insufficient leave balance! You have {remaining_leave} days left."
 
         if file:
             allowed_extensions = ["pdf", "jpeg", "jpg", "png"]
@@ -1106,7 +1090,10 @@ def add_leave_type(request):
                 gender=gender,
                 marital_status=marital_status,
                 department=department,
-                employee=employee
+                employee=employee,
+                total_leave=int(leave_time) if leave_time else None,
+                remaining_leave=int(leave_time) if leave_time else None,
+
             )
             return JsonResponse({'status': 'success', 'message': 'Leave Type added successfully.'})
         except Exception as e:

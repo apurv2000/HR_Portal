@@ -41,9 +41,7 @@ class EmployeeBISP(models.Model):
     phone_number = models.CharField(validators=[phone_regex], max_length=20)
 
 
-    total_leave = models.IntegerField(default=12)  # Total leaves per year
-    remaining_leave = models.FloatField(default=12.0)  # Starts with total leaves
-    availed_leave =  models.FloatField(default=0.0)  # Initially 0
+
     email = models.EmailField(max_length=50)
     password=models.CharField(max_length=200)
     aadhar_card=models.CharField(max_length=200)
@@ -109,6 +107,9 @@ class LeaveType(models.Model):
     )
 
     employee = models.ForeignKey('EmployeeBISP', on_delete=models.SET_NULL, blank=True, null=True)
+    total_leave = models.IntegerField(default=12)  # Total leaves per year
+    remaining_leave = models.FloatField(default=12.0)  # Starts with total leaves
+    availed_leave = models.FloatField(default=0.0)  # Initially 0
 
     def __str__(self):
         return self.name
@@ -159,7 +160,5 @@ class HandbookAcknowledgement(models.Model):
 
     class Meta:
         unique_together = ('pdf', 'employee')  # prevent duplicate acknowledgements
-
-
 
 

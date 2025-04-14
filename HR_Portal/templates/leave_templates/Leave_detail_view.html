@@ -80,7 +80,6 @@
                     </button>
             </td>
           </tr>
-
           <tr>
             <td colspan="6" class="p-0 border-0">
              <div class="custom-collapse" id="leaveDetails{{ forloop.counter }}" style="display: none;">
@@ -90,12 +89,11 @@
                             <strong>Employee:</strong> {{ leave.employee.name }}<br>
                             <strong>Leave Dates:</strong> {{ leave.start_date|date:"M d, Y" }} - {{ leave.end_date|date:"M d, Y" }}<br>
                             <strong>Reason:</strong> {{ leave.reason }}<br>
+                            <strong>Weekend Count as off :</strong> {{ leave.leave_type.count_weekends_as_leave }}<br>
+                            <strong>Holiday Count as off:</strong> {{ leave.leave_type.count_weekends_as_leave }}<br>
                             <strong>Half Day:</strong> {{ leave.is_half_day|yesno:"Yes,No" }}<br>
                             <strong>Comp Off:</strong> {{ leave.comp_off|yesno:"Yes,No" }}<br>
                             <strong>Status:</strong> {{ leave.status  }}<br>
-
-
-
                           </div>
                         {% empty %}
                           <p>No employee leave data for this type.</p>
