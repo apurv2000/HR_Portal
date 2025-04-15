@@ -47,36 +47,37 @@
           <div class="card-header">Leave Detail</div>
           <div class="card-body">
             <div style="overflow-x: auto;">
-              <table class="table table-bordered table-striped text-center" style="min-width: 100%;">
+                 <table class="table table-bordered table-striped text-center" style="min-width: 100%;">
                 <thead class="table-dark">
                   <tr>
                     <th>Type</th>
-                    {% for types in leave_type %}
-                      <th>{{ types.name }}</th>
+                    {% for type in leave_data %}
+                      <th>{{ type.name }}</th>
                     {% endfor %}
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
                     <td>Total Leave</td>
-                    {% for types in leave_type %}
-                      <td>{{ types.total_leave }}</td>
+                    {% for type in leave_data %}
+                      <td>{{ type.total_leave }}</td>
                     {% endfor %}
                   </tr>
                   <tr>
                     <td>Remaining Leave</td>
-                    {% for types in leave_type %}
-                      <td>{{ types.remaining_leave }}</td>
+                    {% for type in leave_data %}
+                      <td>{{ type.remaining_leave }}</td>
                     {% endfor %}
                   </tr>
                   <tr>
                     <td>Availed Leave</td>
-                    {% for types in leave_type %}
-                      <td>{{ types.availed_leave }}</td>
+                    {% for type in leave_data %}
+                      <td>{{ type.availed_leave }}</td>
                     {% endfor %}
                   </tr>
                 </tbody>
               </table>
+
             </div>
           </div>
         </div>
@@ -104,24 +105,23 @@
                 <div id="error-applydate" class="text-danger"></div>
               </div>
 
-              <!-- Remaining Leave -->
-              <div class="mb-3">
-                <label>Remaining Leave:</label>
-                <input type="text" class="form-control" id="remainleave" name="remainleave" value="" readonly>
-              </div>
-
-              <!-- Leave Type -->
+          <!-- Leave Type -->
               <div class="mb-3">
                 <label>Leave Type:<span class="text-danger">*</span></label>
                 <select class="form-control" name="leavetype" id="leavetype" onchange="updateRemainingLeave()">
                   <option value="" disabled selected>Select Leave</option>
-                  {% for leave in leave_type %}
-                    <option value="{{ leave.name }}" data-remaining-leave="{{ leave.remaining_leave }}">{{ leave.name }}</option>
+                  {% for leave in leave_data %}
+                    <option value="{{ leave.name }}" data-remaining="{{ leave.remaining_leave }}">{{ leave.name }}</option>
                   {% endfor %}
                 </select>
                 <div id="error-leavetype" class="text-danger"></div>
               </div>
 
+              <!-- Remaining Leave -->
+              <div class="mb-3">
+                <label>Remaining Leave:</label>
+                <input type="text" class="form-control" id="remainleave" name="remainleave" value="" readonly>
+              </div>
               <!-- From Date -->
               <div class="mb-3">
                 <label>From Date:<span class="text-danger">*</span></label>

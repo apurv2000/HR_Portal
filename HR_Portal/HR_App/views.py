@@ -7,6 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
 from django.core.files.storage import FileSystemStorage
 from django.core.mail import send_mail
+from django.db import transaction
 from django.db.models import Prefetch
 from django.shortcuts import render, redirect, get_object_or_404
 import json
@@ -21,7 +22,7 @@ from django.shortcuts import render
 from django.views.decorators.csrf import csrf_protect
 
 from .models import EmployeeBISP, Leave, LeaveType, Designation, Department, HandbookPDF, \
-    HandbookAcknowledgement  # Import your Employee model
+    HandbookAcknowledgement, EmpLeaveType  # Import your Employee model
 from openpyxl import Workbook
 
 
@@ -128,16 +129,10 @@ def Leave_list_approved(request):
     if not request.session.get('employee_id'):
         return redirect('Login_user_page')
 
-    # Get all employees ordered by descending ID (last created first)
-    leave = EmployeeBISP.objects.prefetch_related(
-        Prefetch(
-            'leave_set',
-            queryset=Leave.objects.order_by('-apply_date', '-id')
-        )
-    ).order_by('-id')  # Last added employee first
+    # Get all leaves from all employees, ordered by apply_date and then ID (newest first)
+    leave_queryset = Leave.objects.order_by('created_at')  # Most recent application first
 
-    return render(request, 'leave_templates/Leave_list_approved.html', {'employees': leave})
-
+    return render(request, 'leave_templates/Leave_list_approved.html', {'leave_queryset': leave_queryset})
 #ID -12
 # def update_leave_approve(request, leave_id):
 #     if not request.session.get('employee_id'):
@@ -203,11 +198,13 @@ def update_leave_approve(request, leave_id):
 
         # Handle rejection reason if the status is 'Rejected'
         if status == 'Rejected' and rejection_reason:
-            # Revert leave balance in LeaveType model if rejected
-            leave_type_instance.remaining_leave = min(leave_type_instance.total_leave,
-                                                      leave_type_instance.remaining_leave + leave_days)
-            leave_type_instance.availed_leave = max(0, leave_type_instance.availed_leave - leave_days)
-            leave_type_instance.save()
+            # Revert leave balance in EmpLeaveType model if rejected
+            emp_leave_type_instance = EmpLeaveType.objects.get(employee=employee, leave_type=leave_type_instance)
+
+            emp_leave_type_instance.remaining_leave = min(emp_leave_type_instance.total_leave,
+                                                          emp_leave_type_instance.remaining_leave + leave_days)
+            emp_leave_type_instance.availed_leave = max(0, emp_leave_type_instance.availed_leave - leave_days)
+            emp_leave_type_instance.save()
 
             leave.reject_reason = rejection_reason
             leave.reject_date = timezone.now()
@@ -216,19 +213,17 @@ def update_leave_approve(request, leave_id):
         elif status == 'Approved':
             if leave.start_date >= timezone.now().date():  # Ensure the leave date is in the future or today
                 # Adjust the employee's leave balance according to the leave type
-                if leave_type_instance.leave_type == 'Paid':
                     # For paid leave, adjust the balance accordingly
-                    leave_type_instance.availed_leave = max(0, leave_type_instance.availed_leave + leave_days)
-                    leave_type_instance.remaining_leave = max(0, leave_type_instance.remaining_leave - leave_days)
-                elif leave_type_instance.leave_type == 'Unpaid':
-                    # For unpaid leave, no leave balance change but ensure proper records
-                    pass
+                    emp_leave_type_instance = EmpLeaveType.objects.get(employee=employee, leave_type=leave_type_instance)
+
+                    emp_leave_type_instance.availed_leave = max(0, emp_leave_type_instance.availed_leave + leave_days)
+                    emp_leave_type_instance.remaining_leave = max(0, emp_leave_type_instance.remaining_leave - leave_days)
+                    emp_leave_type_instance.save()
+
+
 
         # Save the updated leave record
         leave.save()
-
-        # Save the updated leave type record (for availed/remaining leave adjustments)
-        leave_type_instance.save()
 
         # Show a success message
         messages.success(request, f"Leave status updated to {status}.")
@@ -238,7 +233,6 @@ def update_leave_approve(request, leave_id):
 
     # In case of GET or invalid status, return to leave list or a relevant page
     return redirect('LeavelistApproved')
-
 
 def handdbook(request):
     if not request.session.get('employee_id'):
@@ -755,31 +749,47 @@ def Forget_passord(request):
 
 
 # =======================================================================================================
-
 def leave_Add_page(request):
     if not request.session.get('employee_id'):
         return redirect('Login_user_page')
-    id = request.session.get('employee_id')
 
-    try:
-        employee = EmployeeBISP.objects.get(id=id)
-    except EmployeeBISP.DoesNotExist:
-        employee=None
+    employee_id = request.session['employee_id']
+    employee = EmployeeBISP.objects.filter(id=employee_id).first()
 
-        # Fetch all active leave types
-    leave_types = LeaveType.objects.filter(status='active', employee__isnull=True)
+    # Get employee-specific leave records
+    emp_leaves = EmpLeaveType.objects.select_related('leave_type').filter(
+        employee=employee,
+        leave_type__status='active'
+    ) if employee else []
 
-    # If employee exists, filter the leave types that are specific to them (if any)
-    if employee:
-        # Optionally, filter employee-specific leave types (e.g. department-based, role-based, etc.)
-        # Assuming LeaveType has an employee field or a relationship (e.g. department, role)
-        employee_leave_types = LeaveType.objects.filter(employee=employee)
+    emp_leave_list = [
+        {
+            'id': e.leave_type.id,
+            'name': e.leave_type.name,
+            'total_leave': e.total_leave,
+            'remaining_leave': e.remaining_leave,
+            'availed_leave': e.availed_leave,
+        }
+        for e in emp_leaves
+    ]
 
-         # Combine both generic leave types and employee-specific leave types
-        leave_types = leave_types.union(employee_leave_types)
+    # Get global leave types not tied to any employee
+    assigned_type_ids = EmpLeaveType.objects.values_list('leave_type_id', flat=True)
+    global_leave_types = LeaveType.objects.filter(status='active').exclude(id__in=assigned_type_ids)
 
-    return render(request,'leave_templates/leave_add.html',{'employee':employee,'leave_type':leave_types})
+    for leave in global_leave_types:
+        emp_leave_list.append({
+            'id': leave.id,
+            'name': leave.name,
+            'total_leave': '-',
+            'remaining_leave': '-',
+            'availed_leave': '-',
+        })
 
+    return render(request, 'leave_templates/leave_add.html', {
+        'employee': employee,
+        'leave_data': emp_leave_list,
+    })
 
 def Apply_leave(request):
     if not request.session.get('employee_id'):
@@ -890,11 +900,18 @@ def Apply_leave(request):
                 print(f"Total leave days calculated: {leave_days}")
                 print("Half-day details:", half_day_choices)
 
-            # Check remaining leave
-            remaining_leave = leave_obj.remaining_leave or 0
-            print(f"Remaining Leave: {remaining_leave}, Requested: {leave_days}")
-            if leave_days > remaining_leave:
-                errors["leave"] = f"Insufficient leave balance! You have {remaining_leave} days left."
+            # After leave_obj is fetched and validated
+            emp_leave = EmpLeaveType.objects.filter(employee=employee, leave_type=leave_obj).first()
+            if not emp_leave:
+                errors["leave"] = f"No leave balance found for {leave_obj.name}."
+            else:
+                remaining_leave = emp_leave.remaining_leave or 0
+
+                print(f"Remaining Leave: {remaining_leave}, Requested: {leave_days}")
+                if leave_days > remaining_leave:
+                    errors["leave"] = f"Insufficient leave balance! You have {remaining_leave} days left."
+
+
 
         if file:
             allowed_extensions = ["pdf", "jpeg", "jpg", "png"]
@@ -954,46 +971,48 @@ def Leave_list(request):
 
 #Withdraw Leave
 def Withdraw_leave(request, leave_id):
-    # Fetch the leave record by leave_id
+    # Fetch the leave record
     leave = get_object_or_404(Leave, id=leave_id)
 
-    # Get the employee related to this leave record
-    employee = leave.employee
-
-    # Get the leave days from the leave record
+    # Get leave days and related info
     leave_days = leave.leave_days
+    employee = leave.employee
+    leave_type = leave.leave_type
 
-    # Restore leave counts safely (leave balance is updated)
-    # Check if withdrawal is allowed
-    if leave.start_date == datetime.now().date() or datetime.combine(leave.start_date,
-                                                                      datetime.min.time()) > datetime.now():
-        # Update employee leave balance
-        employee.availed_leave = max(0, employee.availed_leave - leave_days)
-        employee.remaining_leave = min(employee.total_leave, employee.remaining_leave + leave_days)
-        employee.save()
+    # Get EmpLeaveType record
+    emp_leave_type = EmpLeaveType.objects.filter(employee=employee, leave_type=leave_type).first()
 
-        # Update the leave status to 'Withdrawn'
-        leave.status = 'Withdrawn'  # Or leave it as 'Pending' if you don't want to change status
+    if not emp_leave_type:
+        messages.error(request, "Employee leave balance record not found.")
+        return redirect('Leavelist')
+
+    # Check if withdrawal is allowed (only if today is same or before leave starts)
+    if leave.start_date == datetime.now().date() or datetime.combine(leave.start_date, datetime.min.time()) > datetime.now():
+        # Restore leave balances in EmpLeaveType
+        emp_leave_type.availed_leave = max(0, emp_leave_type.availed_leave - leave_days)
+        emp_leave_type.remaining_leave = min(emp_leave_type.total_leave, emp_leave_type.remaining_leave + leave_days)
+        emp_leave_type.save()
+
+        # Update leave status
+        leave.status = 'Withdrawn'
         leave.save()
 
-        # Show success message
         messages.success(request, f"Leave withdrawn successfully. {leave_days} day(s) added back.")
-    elif datetime.now() > datetime.combine(leave.start_date, datetime.min.time()):
-        # Prevent withdrawal if withdrawal date is after leave start date (same day or later)
-        messages.error(request, f"Cannot withdraw leave.")
+    elif datetime.now().date() > leave.start_date:
+        messages.error(request, "Cannot withdraw leave after its start date.")
     else:
-        # Show error message if withdrawal fails
-        messages.error(request, f"Leave withdrawn unsuccessfully.")
+        messages.error(request, "Leave withdrawal failed.")
 
-    # Redirect back to the leave list page or wherever you'd like to redirect
     return redirect('Leavelist')
 
 def add_leave_type(request):
     if not request.session.get('employee_id'):
         return redirect('Login_user_page')
+
     if request.method == 'POST':
         errors = {}
 
+        # Basic info
         leave_name = request.POST.get('leave_name')
         code = request.POST.get('code')
         leave_type = request.POST.get('leave_type')  # Paid / Unpaid
@@ -1015,7 +1034,9 @@ def add_leave_type(request):
         leave_time_unit = request.POST.get('leave_time_unit')
         leave_frequency = request.POST.get('leave_time_frequency')
 
-        # Normalize values
+        if not leave_time:
+            errors['leave_time']="Leave time is required"
+
         effective_from = effective_from.upper()
         leave_time_unit = leave_time_unit.upper() if leave_time_unit else None
         leave_frequency = leave_frequency.upper() if leave_frequency else None
@@ -1025,37 +1046,35 @@ def add_leave_type(request):
         VALID_FREQUENCIES = ['MONTHLY', 'YEARLY']
 
         if effective_from not in VALID_EFFECTIVE_FROM:
-            errors['effective_from'] = f"Value '{effective_from}' is not a valid choice."
+            errors['effective_from'] = f"Invalid value '{effective_from}'."
         if leave_time_unit and leave_time_unit not in VALID_UNITS:
-            errors['leave_time_unit'] = f"Value '{leave_time_unit}' is not a valid choice."
+            errors['leave_time_unit'] = f"Invalid unit '{leave_time_unit}'."
         if leave_frequency and leave_frequency not in VALID_FREQUENCIES:
-            errors['leave_frequency'] = f"Value '{leave_frequency}' is not a valid choice."
+            errors['leave_frequency'] = f"Invalid frequency '{leave_frequency}'."
 
         # Restrictions
         count_weekends_as_leave = request.POST.get('weekend_count') == 'yes'
         count_holidays_as_leave = request.POST.get('holiday_count') == 'yes'
 
+        # Filters
         status = request.POST.get('status', 'active')
-        employee_type = request.POST.get('employee_type')
+        employee_type = request.POST.get('employee_type')  # 'all' or 'individual'
         gender = request.POST.get('gender') if employee_type == 'individual' else None
         marital_status = request.POST.get('marital_status') if employee_type == 'individual' else None
 
         department = None
-        employee = None
+        selected_employee = None
 
         if employee_type == 'individual':
             department_id = request.POST.get('department')
             employee_id = request.POST.get('employee')
-            gender = request.POST.get('gender')
-            marital_status = request.POST.get('marital_status')
 
-            # Validation
             if not gender:
                 errors['gender'] = "Gender is required for individual employees."
             if not marital_status:
                 errors['marital_status'] = "Marital status is required for individual employees."
             if not department_id:
-                errors['department'] = "Department is required for individual employees."
+                errors['department'] = "Department is required."
             else:
                 try:
                     department = Department.objects.get(id=department_id)
@@ -1063,10 +1082,10 @@ def add_leave_type(request):
                     errors['department'] = "Invalid department selected."
 
             if not employee_id:
-                errors['employee'] = "Employee is required for individual employees."
+                errors['employee'] = "Employee is required."
             else:
                 try:
-                    employee = EmployeeBISP.objects.get(id=employee_id)
+                    selected_employee = EmployeeBISP.objects.get(id=employee_id)
                 except EmployeeBISP.DoesNotExist:
                     errors['employee'] = "Invalid employee selected."
 
@@ -1074,33 +1093,56 @@ def add_leave_type(request):
             return JsonResponse({'status': 'error', 'errors': errors}, status=400)
 
         try:
-            LeaveType.objects.create(
-                name=leave_name,
-                code=code,
-                leave_type=leave_type,
-                accrual=accrual,
-                effective_after=int(effective_after) if effective_after else None,
-                effective_from=effective_from,
-                leave_time=int(leave_time) if leave_time else None,
-                leave_time_unit=leave_time_unit,
-                leave_frequency=leave_frequency,
-                count_weekends_as_leave=count_weekends_as_leave,
-                count_holidays_as_leave=count_holidays_as_leave,
-                status=status,
-                gender=gender,
-                marital_status=marital_status,
-                department=department,
-                employee=employee,
-                total_leave=int(leave_time) if leave_time else None,
-                remaining_leave=int(leave_time) if leave_time else None,
+            with transaction.atomic():
+                # Create LeaveType (as a master/template)
+                leave_type_obj = LeaveType.objects.create(
+                    name=leave_name,
+                    code=code,
+                    leave_type=leave_type,
+                    accrual=accrual,
+                    effective_after=int(effective_after) if effective_after else None,
+                    effective_from=effective_from,
+                    leave_time=int(leave_time) if leave_time else None,
+                    leave_time_unit=leave_time_unit,
+                    leave_frequency=leave_frequency,
+                    count_weekends_as_leave=count_weekends_as_leave,
+                    count_holidays_as_leave=count_holidays_as_leave,
+                    status=status,
+                    gender=gender,
+                    marital_status=marital_status,
+                    department=department
+                )
 
-            )
+                # Assign leave balances to employee(s)
+                if leave_time:
+                    leave_time = int(leave_time)
+
+                    if employee_type == 'individual' and selected_employee:
+                        EmpLeaveType.objects.create(
+                            employee=selected_employee,
+                            leave_type=leave_type_obj,
+                            total_leave=leave_time,
+                            remaining_leave=leave_time,
+                            availed_leave=0
+                        )
+                    elif employee_type == 'all':
+                        employees = EmployeeBISP.objects.all()
+                        EmpLeaveType.objects.bulk_create([
+                            EmpLeaveType(
+                                employee=emp,
+                                leave_type=leave_type_obj,
+                                total_leave=leave_time,
+                                remaining_leave=leave_time,
+                                availed_leave=0
+                            ) for emp in employees
+                        ])
+
             return JsonResponse({'status': 'success', 'message': 'Leave Type added successfully.'})
+
         except Exception as e:
             return JsonResponse({'status': 'error', 'errors': {'non_field_error': str(e)}}, status=500)
 
     return render(request, 'leave_templates/Leave_Type_Add.html')
-
 #For Handbook PDF
 def uploadPDF(request):
     if not request.session.get('employee_id'):

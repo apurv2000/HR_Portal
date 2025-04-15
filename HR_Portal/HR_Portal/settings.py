@@ -38,7 +38,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'HR_App',
-    'Project'
+    'Project',
+    'Timesheet',
 ]
 
 MIDDLEWARE = [

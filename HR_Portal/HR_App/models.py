@@ -1,8 +1,8 @@
 from django.contrib.auth.models import User
 from django.db import models
 from django.core.validators import RegexValidator
-from datetime import date, datetime  # Import date
-
+from datetime import date, datetime
+from django.utils import timezone
 
 
 
@@ -106,13 +106,23 @@ class LeaveType(models.Model):
         help_text="Optional: Restrict to a specific department"
     )
 
-    employee = models.ForeignKey('EmployeeBISP', on_delete=models.SET_NULL, blank=True, null=True)
-    total_leave = models.IntegerField(default=12)  # Total leaves per year
-    remaining_leave = models.FloatField(default=12.0)  # Starts with total leaves
-    availed_leave = models.FloatField(default=0.0)  # Initially 0
 
     def __str__(self):
         return self.name
+
+class EmpLeaveType(models.Model):
+    employee = models.ForeignKey('EmployeeBISP', on_delete=models.CASCADE)
+    leave_type = models.ForeignKey('LeaveType', on_delete=models.CASCADE)
+    total_leave = models.IntegerField(default=12)
+    remaining_leave = models.FloatField(default=12.0)
+    availed_leave = models.FloatField(default=0.0)
+
+    class Meta:
+        unique_together = ('employee', 'leave_type')
+
+    def __str__(self):
+        return f"{self.employee} - {self.leave_type}"
+
 
 
 class Leave(models.Model):
@@ -137,6 +147,10 @@ class Leave(models.Model):
     attachment = models.FileField(upload_to="leave_attachments/", blank=True, null=True)
     leave_days = models.FloatField(default=1.0)  # Store 0.5, 1.0, 2.0, etc.
     half_day_type_name=models.CharField(max_length=20,null=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ['-created_at']
 
     def __str__(self):
         return f"{self.employee.name} - {self.leave_type.name} ({self.status})"

@@ -10,24 +10,24 @@
 
 <!-- Page Header -->
 <div class="content-wrapper">
-  <section class="content-header">
-    <div class="container-fluid">
-      <div class="row mb-2">
-        <div class="col-sm-6">
-           <nav aria-label="breadcrumb">
-       <ol class="breadcrumb  ">
-      <li class="breadcrumb-item"><a href="#" class="text-primary">Dashboard</a></li>
-      <li class="breadcrumb-item active" aria-current="page">Add Leave</li>
-    </ol>
-  </nav>
+      <section class="content-header">
+        <div class="container-fluid">
+          <div class="row mb-2">
+            <div class="col-sm-6">
+               <nav aria-label="breadcrumb">
+           <ol class="breadcrumb  ">
+          <li class="breadcrumb-item"><a href="#" class="text-primary">Dashboard</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Add Leave</li>
+        </ol>
+      </nav>
 
+            </div>
+            <div class="col-sm-6 text-right">
+                <a href="{% url 'LeaveDetail' %}" class="btn btn-primary">Back</a>
+            </div>
+          </div>
         </div>
-        <div class="col-sm-6 text-right">
-            <a href="{% url 'LeaveDetail' %}" class="btn btn-primary">Back</a>
-        </div>
-      </div>
-    </div>
-  </section>
+      </section>
 
 <div class="container mt-5">
 
@@ -123,89 +123,93 @@
             <div class="row">
               <div class="col-md-6 mb-3">
                 <label for="department" class="form-label">Department:</label>
-                <select class="form-select" name="department" id="department" >
-                <option value="">Select Department</option>
-                {% for dept in departments %}
-                  <option value="{{ dept.id }}">{{ dept.name }}</option>
-                {% endfor %}
-              </select>
+                  <select id="department" name="department" class="form-select">
+                      <option value="">Select Department</option>
+                      {% for department in departments %}
+                          <option value="{{ department.id }}">{{ department.name }}</option>
+                      {% endfor %}
+                  </select>
 
               </div>
 
               <div class="col-md-6 mb-3">
                 <label for="employee" class="form-label">Employee:</label>
-                <select class="form-select" name="employee" id="employee">
-                  <option value="">Select Employee</option>
-                  {% for emp in employees %}
-                  <option value="{{ emp.id }}">{{ emp.name }}</option>
-                  {% endfor %}
+                 <select id="employee" name="employee" class="form-select">
+                    <option value="">Select Employee</option>
+                    {% for employee in employees %}
+                        <option value="{{ employee.id }}" data-department="{{ employee.department.id }}">
+                            {{ employee.name }}
+                        </option>
+                    {% endfor %}
                 </select>
               </div>
             </div>
-
           </div>
 
           <!-- Entitlement Tab -->
          <div class="tab-pane fade" id="entitlement" role="tabpanel">
-  <!-- Effective After & From in the same row -->
-  <div class="row mb-4">
-    <!-- Effective After -->
-    <div class="col-md-6 col-lg-6">
-      <label class="form-label">Effective After</label>
-      <div class="row">
-        <div class="col-6">
-          <input type="number" class="form-control" name="effective_after" min="0" placeholder="Enter duration">
-        </div>
-        <div class="col-6">
-          <select class="form-select" name="effective_after_unit">
-            <option value="year">Year(s)</option>
-            <option value="month">Month(s)</option>
-            <option value="day">Day(s)</option>
-          </select>
-        </div>
-      </div>
-    </div>
+            <!-- Effective After & From in the same row -->
+            <div class="row mb-4">
+              <!-- Effective After -->
+              <div class="col-md-6 col-lg-6">
+                <label class="form-label">Effective After</label>
+                <div class="row">
+                  <div class="col-6">
+                    <input type="number" class="form-control" name="effective_after" min="0" placeholder="Enter duration">
+                  </div>
+                  <div class="col-6">
+                    <select class="form-select" name="effective_after_unit">
+                      <option value="year">Year(s)</option>
+                      <option value="month">Month(s)</option>
+                      <option value="day">Day(s)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
 
-    <!-- From Dropdown -->
-    <div class="col-md-6 col-lg-6">
-      <label class="form-label">From</label>
-      <select class="form-select" name="effective_from">
-        <option value="DOJ">Date of Joining</option>
-        <option value="CONFIRMATION">Date of Confirmation</option>
-      </select>
-    </div>
-  </div>
+              <!-- From Dropdown -->
+              <div class="col-md-6 col-lg-6">
+                <label class="form-label">From</label>
+                <select class="form-select" name="effective_from">
+                  <option value="DOJ">Date of Joining</option>
+                  <option value="CONFIRMATION">Date of Confirmation</option>
+                </select>
+              </div>
+            </div>
 
-  <!-- Accrual Checkbox -->
-  <div class="form-check form-switch mb-4">
-    <input class="form-check-input" type="checkbox" name="accrual" id="accrualCheck" checked>
-    <label class="form-check-label" for="accrualCheck">
-      Accrual
-    </label>
-  </div>
+            <!-- Accrual Checkbox -->
+            <div class="form-check form-switch mb-4">
+              <input class="form-check-input" type="checkbox" name="accrual" id="accrualCheck" checked>
+              <label class="form-check-label" for="accrualCheck">
+                Accrual
+              </label>
+            </div>
 
-  <!-- Leave Time Section -->
-  <div class="row mb-3">
-    <div class="col-md-4">
-      <label class="form-label">Leave Time</label>
-      <input type="number" class="form-control" name="leave_time" min="0" placeholder="e.g., 12">
-    </div>
-    <div class="col-md-4">
-      <label class="form-label">Unit</label>
-      <select class="form-select" name="leave_time_unit">
-        <option value="DAYS">Days</option>
-        <option value="HOURS">Hours</option>
-      </select>
-    </div>
-    <div class="col-md-4">
-      <label class="form-label">Frequency</label>
-      <select class="form-select" name="leave_time_frequency">
-        <option value="YEARLY">Yearly</option>
-        <option value="MONTHLY">Monthly</option>
-      </select>
-    </div>
-  </div>
-</div>
+            <!-- Leave Time Section -->
+            <div class="row mb-3">
+              <div class="col-md-4">
+                <label class="form-label">Leave Time</label>
+                <input type="number" class="form-control" name="leave_time" min="0" placeholder="e.g., 12">
+                 {% if errors.leave_time %}
+                  <div class="text-danger mt-1">{{ errors.leave_time}}</div>
+                {% endif %}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Unit</label>
+                <select class="form-select" name="leave_time_unit">
+                  <option value="DAYS">Days</option>
+                  <option value="HOURS">Hours</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Frequency</label>
+                <select class="form-select" name="leave_time_frequency">
+                  <option value="YEARLY">Yearly</option>
+                  <option value="MONTHLY">Monthly</option>
+                </select>
+              </div>
+            </div>
+          </div>
 
           <!-- Restrictions Tab -->
           <div class="tab-pane fade" id="restrictions" role="tabpanel">

@@ -37,6 +37,33 @@
   <!-- Statistics -->
   <link rel="stylesheet" href="{% static 'css/statistics.css' %}">
 
+
+
+    <!--Style for Timesheet.html-->
+   <style>
+    .timesheet-container {
+      max-width: 1200px;
+      margin: 40px auto;
+      background: #fff;
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      padding: 20px;
+    }
+    .form-control-time {
+      max-width: 140px;
+    }
+    .description-required {
+      color: red;
+      font-size: 0.9rem;
+    }
+    .btn-top {
+      float: right;
+      margin-left: 10px;
+    }
+    .table td, .table th {
+      vertical-align: middle;
+    }
+  </style>
     <!--For Project Detail Page-->
       <style>
         .info-card {
@@ -257,22 +284,119 @@
 <script src="{% static 'plugins/bs-custom-file-input/bs-custom-file-input.min.js' %}"></script>
 <script src="{% static 'plugins/datatables-buttons/js/buttons.colVis.min.js' %}"></script>
 <script src="https://cdn.tailwindcss.com"></script>
-
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js" integrity="sha384-k6d4wzSIapyDyv1kpU366/PK5hCdSbCRGRCMv+eplOQJWyd1fbcAu9OCUj5zNLiq" crossorigin="anonymous"></script>
 
-<!--For display dynamic remaining leave in leave_add.html-->
-<script type="text/javascript">
-    function updateRemainingLeave() {
-        var selectElement = document.getElementById("leavetype");
-        var selectedOption = selectElement.options[selectElement.selectedIndex];
-        var remainingLeave = selectedOption.getAttribute("data-remaining-leave");
 
-        // Set the remaining leave input value to the selected leave type's remaining leave
-        document.getElementById("remainleave").value = remainingLeave;
-    }
+<!--Ecript for show employee based on department in leave type add module-->
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const departmentSelect = document.getElementById('department');
+    const employeeSelect = document.getElementById('employee');
+
+    departmentSelect.addEventListener('change', function () {
+      const selectedDept = this.value;
+
+      // Show only employees matching the selected department
+      Array.from(employeeSelect.options).forEach(option => {
+        const empDept = option.getAttribute('data-department');
+        if (!selectedDept || empDept === selectedDept || option.value === '') {
+          option.style.display = 'block';
+        } else {
+          option.style.display = 'none';
+        }
+      });
+
+      // Reset employee selection
+      employeeSelect.value = '';
+    });
+
+    // Trigger change once on page load if a department is pre-selected
+    departmentSelect.dispatchEvent(new Event('change'));
+  });
 </script>
 
+
+<!--Script for Team member dropdown in Project Add-->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const checkboxes = document.querySelectorAll('.team-member-option');
+    const button = document.getElementById('teamMembersBtn');
+    const hiddenInput = document.getElementById('team_members');
+
+    function updateSelected() {
+        let selectedLabels = [];
+        let selectedIds = [];
+
+        checkboxes.forEach(cb => {
+            if (cb.checked) {
+                selectedLabels.push(cb.getAttribute('data-label'));
+                selectedIds.push(cb.value);
+            }
+        });
+
+        button.textContent = selectedLabels.length > 0 ? selectedLabels.join(', ') : 'Select team members';
+        hiddenInput.value = selectedIds.join(',');
+    }
+
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', updateSelected);
+    });
+
+    // Initialize on page load (in case of preselected options)
+    updateSelected();
+});
+</script>
+
+
+
+<!-- Script for Timesheet Form Submission with AJAX -->
+<script>
+  document.querySelector('.btn-top').addEventListener('click', function (e) {
+    e.preventDefault();  // Prevent the default button action (form submission)
+
+    const form = document.getElementById('form');
+    const formData = new FormData(form);  // Get form data
+
+    // Submit the form via AJAX
+    fetch("{% url 'Timesheet:timesheet_add' %}", {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': '{{ csrf_token }}'  // CSRF token for security
+        },
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            alert("Timesheet saved!");
+            location.reload();  // Reload page after successful submission
+        } else {
+            // Handle errors
+            for (const [dayKey, fields] of Object.entries(data.errors)) {
+                console.log(`Errors for ${dayKey}:`, fields);
+                // Optional: Show errors next to form fields
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error submitting form:', error);
+        alert('An error occurred while submitting the form. Please try again.');
+    });
+  });
+</script>
+
+
+<!-- Script to dynamically update remaining leave -->
+<script>
+  function updateRemainingLeave() {
+    const select = document.getElementById("leavetype");
+    const selected = select.options[select.selectedIndex];
+    const remaining = selected.getAttribute("data-remaining");
+
+    document.getElementById("remainleave").value = remaining || '';
+  }
+</script>
 <!-- Script to Handle Active Option in task detail dropdown-->
 <script>
   function submitStatus(status) {
