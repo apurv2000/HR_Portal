@@ -56,16 +56,11 @@
               <table id="example1" class="table table-bordered table-striped">
                 <thead>
                     <tr>
-
-
-                      <th>Role</th>
-                      <th>Designation</th>
-                      <th>Department</th>
-<!--              pending        <th>Team Leader</th>-->
                       <th>Leave Type</th>
                       <th>Leave Days</th>
                       <th>Reason</th>
                       <th>Status</th>
+                      <th>Action By</th>
                       <th>Start Date</th>
                       <th>End Date</th>
                       <th >Actions</th>
@@ -77,11 +72,6 @@
                 {% for employee in employees %}
                   {% for leave in employee.leave_set.all %}
                     <tr>
-
-                      <td>{{ employee.role }}</td>
-                      <td>{{ employee.designation.title }}</td>
-<!--                   -->
-                      <td>{{ employee.department.name }}</td>
                       <td>{{ leave.leave_type.name }}</td>
                       <td>{{ leave.leave_days  }}</td>
                       <td>{{ leave.reason }}</td>
@@ -104,6 +94,14 @@
                           {% endif %}
                         </div>
                       </td>
+                    <td>
+                            {% if leave.approved_by %}
+                                {{ leave.approved_by.name }}
+                            {% else %}
+
+                            {% endif %}
+                        </td>
+
                       <td>{{ leave.start_date }}</td>
                       <td>{{ leave.end_date }}</td>
                       <td>

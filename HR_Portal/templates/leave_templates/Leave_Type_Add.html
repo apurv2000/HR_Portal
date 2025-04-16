@@ -248,4 +248,33 @@
 </div>
 </div>
 
+<!--script for show employee based on department in leave type add module-->
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const departmentSelect = document.getElementById('department');
+    const employeeSelect = document.getElementById('employee');
+
+    departmentSelect.addEventListener('change', function () {
+      const selectedDept = this.value;
+
+      // Show only employees matching the selected department
+      Array.from(employeeSelect.options).forEach(option => {
+        const empDept = option.getAttribute('data-department');
+        if (!selectedDept || empDept === selectedDept || option.value === '') {
+          option.style.display = 'block';
+        } else {
+          option.style.display = 'none';
+        }
+      });
+
+      // Reset employee selection
+      employeeSelect.value = '';
+    });
+
+    // Trigger change once on page load if a department is pre-selected
+    departmentSelect.dispatchEvent(new Event('change'));
+  });
+</script>
+
+
 {% endblock %}

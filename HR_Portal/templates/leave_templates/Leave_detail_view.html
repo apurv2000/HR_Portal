@@ -48,7 +48,7 @@
           {% for leave_type, employee_leaves in leaves_by_type.items %}
           <tr>
             <td>{{ forloop.counter }}</td>
-            <td>{{ leave_type.name }}</td>
+           <td><a href="{% url 'update_leavetypepage' leave_type.id %}" class="text-decoration-none text-primary">{{ leave_type.name }}</a></td>
             <td>{{ leave_type.code }}</td>
             <td>{{ leave_type.leave_type }}</td>
             <td>
@@ -74,34 +74,57 @@
               </div>
             </td>
 
-            <td>
-             <button type="button" class="btn btn-primary" onclick="toggleCollapse('leaveDetails{{ forloop.counter }}')">
-                    +
-                    </button>
-            </td>
+         <td class="text-center">
+        <button type="button" class="btn btn-primary toggle-btn" data-id="{{ leave.id }}" onclick="toggleCollapse('leaveDetails{{ forloop.counter }}')">
+            +
+        </button>
+    </td>
           </tr>
-          <tr>
-            <td colspan="6" class="p-0 border-0">
-             <div class="custom-collapse" id="leaveDetails{{ forloop.counter }}" style="display: none;">
-                      <div class="bg-light p-3">
+         <tr>
+    <td colspan="6" class="p-0 border-0">
+        <div class="custom-collapse" id="leaveDetails{{ forloop.counter }}" style="display: none;">
+            <div class="bg-light p-3">
+                <table id="example1" class="table table-bordered table-striped">
+                    <thead class="table-secondary">
+                        <tr>
+                            <th>Employee</th>
+                            <th>Leave Days</th>
+                            <th>Reason</th>
+                            <th>Comp Off</th>
+                            <th>Weekend Leave</th>
+                            <th>Holiday Leave</th>
+                            <th>Half Day</th>
+                            <th>Status</th>
+                            <th>Uploaded On</th>
+                        </tr>
+                    </thead>
+                    <tbody>
                         {% for leave in employee_leaves %}
-                          <div class="border-bottom pb-2 mb-2">
-                            <strong>Employee:</strong> {{ leave.employee.name }}<br>
-                            <strong>Leave Dates:</strong> {{ leave.start_date|date:"M d, Y" }} - {{ leave.end_date|date:"M d, Y" }}<br>
-                            <strong>Reason:</strong> {{ leave.reason }}<br>
-                            <strong>Weekend Count as off :</strong> {{ leave.leave_type.count_weekends_as_leave }}<br>
-                            <strong>Holiday Count as off:</strong> {{ leave.leave_type.count_weekends_as_leave }}<br>
-                            <strong>Half Day:</strong> {{ leave.is_half_day|yesno:"Yes,No" }}<br>
-                            <strong>Comp Off:</strong> {{ leave.comp_off|yesno:"Yes,No" }}<br>
-                            <strong>Status:</strong> {{ leave.status  }}<br>
-                          </div>
+
+                            <tr>
+                                <td>{{ leave.employee.name  }}</td>
+                                <td>{{ leave.start_date|date:"M d, Y" }} - {{ leave.end_date|date:"M d, Y" }}</td>
+                                <td>{{ leave.reason }}</td>
+                                <td>{{  leave.comp_off|yesno:"Yes,No" }}</td>
+                                <td>{{ leave.leave_type.count_weekends_as_leave}}</td>
+                                <td>{{ leave.leave_type.count_holidays_as_leave  }}</td>
+                                <td>{{  leave.is_half_day|yesno:"Yes,No"  }}</td>
+                                <td>{{leave.status }}</td>
+                                <td>{{ leave.created_at|date:"M d, Y, P" }}</td>
+                            </tr>
+
                         {% empty %}
-                          <p>No employee leave data for this type.</p>
+                            <tr>
+                                <td colspan="9" class="text-center">No employee leave data for this type.</td>
+                            </tr>
                         {% endfor %}
-                      </div>
-                    </div>
-            </td>
-          </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </td>
+</tr>
+
           {% endfor %}
         </tbody>
       </table>

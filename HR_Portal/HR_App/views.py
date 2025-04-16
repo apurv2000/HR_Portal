@@ -7,6 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
 from django.core.files.storage import FileSystemStorage
 from django.core.mail import send_mail
+from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Prefetch
 from django.shortcuts import render, redirect, get_object_or_404
@@ -20,7 +21,7 @@ from django.utils import timezone
 from django.contrib import messages
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_protect
-
+from Project.models import Project,Task
 from .models import EmployeeBISP, Leave, LeaveType, Designation, Department, HandbookPDF, \
     HandbookAcknowledgement, EmpLeaveType  # Import your Employee model
 from openpyxl import Workbook
@@ -36,8 +37,46 @@ def Manager(request):
     if not employee_id:
         return redirect("Login_user_page")
 
+    employee = EmployeeBISP.objects.get(id=employee_id)
 
-    return render(request, 'admin_templates/index.html')
+    # Get all projects where the employee is admin or leader
+    project_qs = Project.objects.filter(admin=employee) | Project.objects.filter(leader=employee)
+
+    # Get related tasks from those projects
+    task_qs = Task.objects.filter(assigned_to=employee)
+
+
+    # Count tasks by status using simple logic
+    status_counts = {
+        'Pending': task_qs.filter(status='Pending').count(),
+        'Inprogress': task_qs.filter(status='Inprogress').count(),
+        'Claimed Completed': task_qs.filter(status='Claimed Completed').count(),
+        'Completed': task_qs.filter(status='Completed').count(),
+        'On Hold': task_qs.filter(status='On Hold').count(),
+    }
+    overdue_tasks = task_qs.exclude(status='Completed').count()
+    total_tasks = task_qs.count()
+    status_labels = ['Pending', 'Inprogress', 'Claimed Completed', 'Completed', 'On Hold']
+    status_counts = {label: task_qs.filter(status=label).count() for label in status_labels}
+
+    # Calculate percentage for each status
+    status_percentages = {}
+    for status, count in status_counts.items():
+        status_percentages[status] = round((count / total_tasks) * 100, 2) if total_tasks else 0
+
+    context = {
+        'total_projects': project_qs.count(),
+        'total_tasks': task_qs.count(),
+        'projects': project_qs,
+        'tasks': task_qs,
+        'total_employee':EmployeeBISP.objects.count(),
+        'status_counts': status_counts,
+        'overdue_tasks': overdue_tasks,
+        'status_percentages': status_percentages,
+
+    }
+
+    return render(request, 'admin_templates/index.html',context)
 
 
 def Hr(request):
@@ -48,9 +87,46 @@ def Hr(request):
     employee_id = request.session.get('employee_id')
     if not employee_id:
         return redirect("Login_user_page")
+    employee = EmployeeBISP.objects.get(id=employee_id)
 
+    # Get all projects where the employee is admin or leader
+    project_qs = Project.objects.filter(admin=employee) | Project.objects.filter(leader=employee)
 
-    return render(request, 'admin_templates/hr_dashboard.html')
+    # Get related tasks from those projects
+    task_qs = Task.objects.filter(assigned_to=employee)
+
+    # Count tasks by status using simple logic
+    status_counts = {
+        'Pending': task_qs.filter(status='Pending').count(),
+        'Inprogress': task_qs.filter(status='Inprogress').count(),
+        'Claimed Completed': task_qs.filter(status='Claimed Completed').count(),
+        'Completed': task_qs.filter(status='Completed').count(),
+        'On Hold': task_qs.filter(status='On Hold').count(),
+    }
+
+    overdue_tasks = task_qs.exclude(status='Completed').count()
+    total_tasks = task_qs.count()
+    status_labels = ['Pending', 'Inprogress', 'Claimed Completed', 'Completed', 'On Hold']
+    status_counts = {label: task_qs.filter(status=label).count() for label in status_labels}
+
+    # Calculate percentage for each status
+    status_percentages = {}
+    for status, count in status_counts.items():
+        status_percentages[status] = round((count / total_tasks) * 100, 2) if total_tasks else 0
+
+    context = {
+        'total_projects': project_qs.count(),
+        'total_tasks': task_qs.count(),
+        'projects': project_qs,
+        'tasks': task_qs,
+        'total_employee': EmployeeBISP.objects.count(),
+        'status_counts': status_counts,
+        'overdue_tasks': overdue_tasks,
+        'status_percentages': status_percentages,
+
+    }
+
+    return render(request, 'admin_templates/hr_dashboard.html',context)
 
 
 def Employee(request):
@@ -61,40 +137,52 @@ def Employee(request):
     if not employee_id:
         return redirect("Login_user_page")
 
-    # Get employee instance
-    try:
-        employee = EmployeeBISP.objects.get(id=employee_id)
-    except EmployeeBISP.DoesNotExist:
-        return redirect("Login_user_page")
+    employee = EmployeeBISP.objects.get(id=employee_id)
+
+    # Get all projects where the employee is admin or leader
+    project_qs = Project.objects.filter(team_members =employee)
+
+    # Get related tasks from those projects
+    task_qs = Task.objects.filter(assigned_to=employee)
+    total_tasks = task_qs.count()
+    status_labels = ['Pending', 'Inprogress', 'Claimed Completed', 'Completed', 'On Hold']
+    status_counts = {label: task_qs.filter(status=label).count() for label in status_labels}
+
+    # Calculate percentage for each status
+    status_percentages = {}
+    for status, count in status_counts.items():
+        status_percentages[status] = round((count / total_tasks) * 100, 2) if total_tasks else 0
+
+    # Count tasks by status using simple logic
+    status_counts = {
+        'Pending': task_qs.filter(status='Pending').count(),
+        'Inprogress': task_qs.filter(status='Inprogress').count(),
+        'Claimed Completed': task_qs.filter(status='Claimed Completed').count(),
+        'Completed': task_qs.filter(status='Completed').count(),
+        'On Hold': task_qs.filter(status='On Hold').count(),
+    }
+    overdue_tasks = task_qs.filter(status__in=['Pending', 'Inprogress', 'Claimed Completed', 'On Hold']).count()
+
+    context = {
+        'total_projects': project_qs.count(),
+        'total_tasks': task_qs.count(),
+        'projects': project_qs,
+        'tasks': task_qs,
+        'total_employee': EmployeeBISP.objects.count(),
+        'status_counts': status_counts,
+        'overdue_tasks': overdue_tasks,
+        'status_percentages': status_percentages,
+
+    }
 
 
-
-    return render(request,'admin_templates/Emp_dashboard.html')
+    return render(request,'admin_templates/Emp_dashboard.html',context)
 
 def Profile(request):
     if not request.session.get('employee_id'):
         return redirect('Login_user_page')
     return render(request,'admin_templates/profile.html')
 
-def Project(request):
-    if not request.session.get('employee_id'):
-        return redirect('Login_user_page')
-    return render(request,'admin_templates/project.html')
-
-def Project_add(request):
-    if not request.session.get('employee_id'):
-        return redirect('Login_user_page')
-    return render(request,'admin_templates/project-add.html')
-
-def Project_detail(request):
-    if not request.session.get('employee_id'):
-        return redirect('Login_user_page')
-    return render(request,'admin_templates/project-detail.html')
-
-def Project_edit(request):
-    if not request.session.get('employee_id'):
-        return redirect('Login_user_page')
-    return render(request,'admin_templates/project-edit.html')
 
 def Forget_pwd(request):
     if not request.session.get('employee_id'):
@@ -183,6 +271,12 @@ def update_leave_approve(request, leave_id):
     if not request.session.get('employee_id'):
         return redirect('Login_user_page')
 
+    employee_id = request.session.get('employee_id')
+    try:
+        employee = EmployeeBISP.objects.get(id=employee_id)
+    except EmployeeBISP.DoesNotExist:
+        employee=None
+
     leave = get_object_or_404(Leave, id=leave_id)
     employee = leave.employee  # Get the employee related to this leave
     leave_days = leave.leave_days  # Get the number of days the leave spans
@@ -195,6 +289,8 @@ def update_leave_approve(request, leave_id):
 
         # Update the leave status
         leave.status = status
+        leave.approved_by=employee
+
 
         # Handle rejection reason if the status is 'Rejected'
         if status == 'Rejected' and rejection_reason:
@@ -211,16 +307,16 @@ def update_leave_approve(request, leave_id):
 
         # Handle when leave is approved
         elif status == 'Approved':
-            if leave.start_date >= timezone.now().date():  # Ensure the leave date is in the future or today
-                # Adjust the employee's leave balance according to the leave type
-                    # For paid leave, adjust the balance accordingly
-                    emp_leave_type_instance = EmpLeaveType.objects.get(employee=employee, leave_type=leave_type_instance)
-
+            if leave.start_date >= timezone.now().date():# Ensure the leave date is in the future or today
+                if leave.compensatory_off == 0 :
+                    emp_leave_type_instance = EmpLeaveType.objects.get(employee=employee,
+                                                                       leave_type=leave_type_instance)
                     emp_leave_type_instance.availed_leave = max(0, emp_leave_type_instance.availed_leave + leave_days)
-                    emp_leave_type_instance.remaining_leave = max(0, emp_leave_type_instance.remaining_leave - leave_days)
+                    emp_leave_type_instance.remaining_leave = max(0,
+                                                                  emp_leave_type_instance.remaining_leave - leave_days)
                     emp_leave_type_instance.save()
-
-
+                elif leave.compensatory_off == 1:
+                    pass
 
         # Save the updated leave record
         leave.save()
@@ -327,6 +423,8 @@ def leave_detail_view(request):
         return redirect('Login_user_page')
     # Get all leave types
     leave_types = LeaveType.objects.all()
+    employee_leaves = Leave.objects.all()  # Modify based on your queryset logic
+
 
     # Create a dictionary: {LeaveType: [Leave, Leave, ...]}
     leaves_by_type = {}
@@ -335,8 +433,14 @@ def leave_detail_view(request):
         employee_leaves = Leave.objects.filter(leave_type=leave_type).select_related('employee')
         leaves_by_type[leave_type] = employee_leaves
 
+        # Paginate the results
+    paginator = Paginator(employee_leaves, 8)  # Show 8 records per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     context = {
-        'leaves_by_type': leaves_by_type
+        'leaves_by_type': leaves_by_type,
+        'page_obj': page_obj
     }
     return render(request, 'leave_templates/Leave_detail_view.html', context)
 
@@ -1143,6 +1247,196 @@ def add_leave_type(request):
             return JsonResponse({'status': 'error', 'errors': {'non_field_error': str(e)}}, status=500)
 
     return render(request, 'leave_templates/Leave_Type_Add.html')
+
+#For render update leave type page
+def update_leave_type_page(request,id):
+    if not request.session.get('employee_id'):
+        return redirect('Login_user_page')
+    leave_type = get_object_or_404(LeaveType,id=id)
+    departments = Department.objects.all()
+    employees = EmployeeBISP.objects.all()
+    emp_leave_type = EmpLeaveType.objects.filter(leave_type=leave_type).first()
+
+    return render(request, 'leave_templates/Leave_type_update.html', {'leave_type': leave_type,'emp_lt':emp_leave_type,'departments':departments,'employees':employees})
+
+
+
+def update_leave_type(request, leave_type_id):
+    if not request.session.get('employee_id'):
+        return redirect('Login_user_page')
+
+    try:
+        leave_type = LeaveType.objects.get(id=leave_type_id)
+    except LeaveType.DoesNotExist:
+        return JsonResponse({'status': 'error', 'errors': {'non_field_error': 'Leave Type not found'}}, status=404)
+
+    if request.method == 'POST':
+        errors = {}
+
+        # Basic info
+        leave_name = request.POST.get('leave_name')
+        code = request.POST.get('code')
+        leave_type_value = request.POST.get('leave_type')  # Paid / Unpaid
+
+        if not leave_name:
+            errors['leave_name'] = "Leave name is required."
+        if not code:
+            errors['code'] = "Code is required."
+        elif LeaveType.objects.filter(code=code).exclude(id=leave_type.id).exists():
+            errors['code'] = "A leave type with this code already exists."
+        if not leave_type_value:
+            errors['leave_type'] = "Leave type is required."
+
+        # Entitlement
+        accrual = request.POST.get('accrual') == 'on'
+        effective_after = request.POST.get('effective_after') or None
+        effective_from = request.POST.get('effective_from') or 'DOJ'
+        leave_time = request.POST.get('leave_time') or None
+        leave_time_unit = request.POST.get('leave_time_unit')
+        leave_frequency = request.POST.get('leave_time_frequency')
+
+        if not leave_time:
+            errors['leave_time'] = "Leave time is required"
+
+        effective_from = effective_from.upper()
+        leave_time_unit = leave_time_unit.upper() if leave_time_unit else None
+        leave_frequency = leave_frequency.upper() if leave_frequency else None
+
+        VALID_EFFECTIVE_FROM = ['DOJ', 'CONFIRMATION']
+        VALID_UNITS = ['DAYS', 'HOURS']
+        VALID_FREQUENCIES = ['MONTHLY', 'YEARLY']
+
+        if effective_from not in VALID_EFFECTIVE_FROM:
+            errors['effective_from'] = f"Invalid value '{effective_from}'"
+        if leave_time_unit and leave_time_unit not in VALID_UNITS:
+            errors['leave_time_unit'] = f"Invalid unit '{leave_time_unit}'"
+        if leave_frequency and leave_frequency not in VALID_FREQUENCIES:
+            errors['leave_frequency'] = f"Invalid frequency '{leave_frequency}'"
+
+        # Restrictions
+        count_weekends_as_leave = request.POST.get('weekend_count') == 'yes'
+        count_holidays_as_leave = request.POST.get('holiday_count') == 'yes'
+
+        # Filters
+        status = request.POST.get('status', 'active')
+        employee_type = request.POST.get('employee_type')  # 'all' or 'individual'
+        gender = request.POST.get('gender') if employee_type == 'individual' else None
+        marital_status = request.POST.get('marital_status') if employee_type == 'individual' else None
+
+        department = None
+        selected_employee = None
+
+        if employee_type == 'individual':
+            department_id = request.POST.get('department')
+            employee_id = request.POST.get('employee')
+
+            if not gender:
+                errors['gender'] = "Gender is required for individual employees."
+            if not marital_status:
+                errors['marital_status'] = "Marital status is required for individual employees."
+            if not department_id:
+                errors['department'] = "Department is required."
+            else:
+                try:
+                    department = Department.objects.get(id=department_id)
+                except Department.DoesNotExist:
+                    errors['department'] = "Invalid department selected."
+
+            if not employee_id:
+                errors['employee'] = "Employee is required."
+            else:
+                try:
+                    selected_employee = EmployeeBISP.objects.get(id=employee_id)
+                except EmployeeBISP.DoesNotExist:
+                    errors['employee'] = "Invalid employee selected."
+
+        if errors:
+            return JsonResponse({'status': 'error', 'errors': errors}, status=400)
+
+        try:
+            with transaction.atomic():
+                # Update LeaveType
+                leave_type.name = leave_name
+                leave_type.code = code
+                leave_type.leave_type = leave_type_value
+                leave_type.accrual = accrual
+                leave_type.effective_after = int(effective_after) if effective_after else None
+                leave_type.effective_from = effective_from
+                leave_type.leave_time = int(leave_time) if leave_time else None
+                leave_type.leave_time_unit = leave_time_unit
+                leave_type.leave_frequency = leave_frequency
+                leave_type.count_weekends_as_leave = count_weekends_as_leave
+                leave_type.count_holidays_as_leave = count_holidays_as_leave
+                leave_type.status = status
+                leave_type.gender = gender
+                leave_type.marital_status = marital_status
+                leave_type.department = department
+
+                # Store old employee type before updating
+                existing_emp_links = EmpLeaveType.objects.filter(leave_type=leave_type)
+                employee_count = existing_emp_links.count()
+
+                if employee_count == 1:
+                    old_employee_type = 'individual'
+                elif employee_count > 1:
+                    old_employee_type = 'all'
+                else:
+                    old_employee_type = None
+
+                # Save updated LeaveType (already done above)
+                leave_type.save()
+
+                # Update EmpLeaveType records
+                if leave_time:
+                    leave_time = int(leave_time)
+
+                    if employee_type == 'individual' and selected_employee:
+                        if old_employee_type == 'all':
+                            # Changed from all → individual, so delete all
+                            EmpLeaveType.objects.filter(leave_type=leave_type).delete()
+                        else:
+                            # Same type, ensure we delete only the old individual if different
+                            EmpLeaveType.objects.filter(leave_type=leave_type).exclude(
+                                employee=selected_employee).delete()
+
+                        # Add/update selected individual
+                        EmpLeaveType.objects.update_or_create(
+                            employee=selected_employee,
+                            leave_type=leave_type,
+                            defaults={
+                                'total_leave': leave_time,
+                                'remaining_leave': leave_time,
+                                'availed_leave': 0
+                            }
+                        )
+
+                    elif employee_type == 'all':
+                        if old_employee_type == 'individual':
+                            # Changed from individual → all, so delete previous individual's record
+                            EmpLeaveType.objects.filter(leave_type=leave_type).delete()
+
+                        employees = EmployeeBISP.objects.all()
+                        EmpLeaveType.objects.bulk_update_or_create(
+                            [EmpLeaveType(
+                                employee=emp,
+                                leave_type=leave_type,
+                                total_leave=leave_time,
+                                remaining_leave=leave_time,
+                                availed_leave=0
+                            ) for emp in employees],
+                            ['employee', 'leave_type'],
+                            update_fields=['total_leave', 'remaining_leave', 'availed_leave']
+                        )
+
+            return JsonResponse({'status': 'success', 'message': 'Leave Type updated successfully.'})
+
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'errors': {'non_field_error': str(e)}}, status=500)
+
+    return render(request, 'leave_templates/Leave_Type_Update.html', {'leave_type': leave_type})
+
+
+#========================================================================================================================+
 #For Handbook PDF
 def uploadPDF(request):
     if not request.session.get('employee_id'):

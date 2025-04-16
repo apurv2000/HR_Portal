@@ -14,13 +14,8 @@
       <div class="container-fluid">
         <div class="row mb-2">
           <div class="col-sm-6">
-            <h1 class="m-0">Dashboard</h1>
           </div><!-- /.col -->
           <div class="col-sm-6">
-            <ol class="breadcrumb float-sm-right">
-              <li class="breadcrumb-item"><a href="#" class="text-primary">Home</a></li>
-              <li class="breadcrumb-item active">HR Panel</li>
-            </ol>
           </div><!-- /.col -->
         </div><!-- /.row -->
       </div><!-- /.container-fluid -->
@@ -37,14 +32,9 @@
 
               <div class="info-box-content">
                 <span class="info-box-text">Total Employee</span>
-                <span class="info-box-number">{{Total_emp}}</span>
+                <span class="info-box-number">{{total_employee}}</span>
 
-                <div class="progress">
-                  <div class="progress-bar" style="width: 70%"></div>
-                </div>
-                <span class="progress-description">
-                  70% Increase in 30 Days
-                </span>
+
               </div>
               <!-- /.info-box-content -->
             </div>
@@ -120,34 +110,9 @@
 
               <div class="info-box-content">
                 <span class="info-box-text">Project</span>
-                <span class="info-box-number">35</span>
+                <span class="info-box-number">{{total_projects}}</span>
 
-                <div class="progress">
-                  <div class="progress-bar" style="width: 70%"></div>
-                </div>
-                <span class="progress-description">
-                  70% Increase in 30 Days
-                </span>
-              </div>
-              <!-- /.info-box-content -->
-            </div>
-            <!-- /.info-box -->
-          </div>
-          <!--  col-->
-                  <div class="col-md-3 col-sm-6 col-12">
-            <div class="info-box bg-gradient-warning">
-              <span class="info-box-icon"><i class="fas fa-tasks"></i></span>
 
-              <div class="info-box-content">
-                <span class="info-box-text">Task</span>
-                <span class="info-box-number">31</span>
-
-                <div class="progress">
-                  <div class="progress-bar" style="width: 70%"></div>
-                </div>
-                <span class="progress-description">
-                  70% Increase in 30 Days
-                </span>
               </div>
               <!-- /.info-box-content -->
             </div>
@@ -155,25 +120,18 @@
           </div>
           <!--  col-->
           <div class="col-md-3 col-sm-6 col-12">
-            <div class="info-box bg-gradient-danger">
-              <span class="info-box-icon"><i class="fas fa-comments"></i></span>
+            <div class="info-box bg-gradient-warning">
+              <span class="info-box-icon"><i class="fas fa-tasks"></i></span>
 
               <div class="info-box-content">
-                <span class="info-box-text">Total Request</span>
-                <span class="info-box-number">24</span>
+                <span class="info-box-text">Task</span>
+                <span class="info-box-number">{{total_tasks}}</span>
 
-                <div class="progress">
-                  <div class="progress-bar" style="width: 70%"></div>
-                </div>
-                <span class="progress-description">
-                  70% Increase in 30 Days
-                </span>
               </div>
               <!-- /.info-box-content -->
             </div>
             <!-- /.info-box -->
           </div>
-          <!-- /.col -->
         </div>
         <!-- /.row -->
       {% include 'admin_templates/Statistics.html' %}
@@ -186,7 +144,6 @@
     <strong>Copyright &copy; 2025 <a href="https://adminlte.io">BISP</a>.</strong>
     All rights reserved.
     <div class="float-right d-none d-sm-inline-block">
-      <b>Version</b> 3.1.0
     </div>
   </footer>
 

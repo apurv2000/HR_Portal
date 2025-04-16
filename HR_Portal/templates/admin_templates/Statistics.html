@@ -1,80 +1,130 @@
-{% extends 'base.html' %}  <!-- Extends the base template -->
-{% load static %}  <!-- Loads static files for images, CSS, etc. -->
+{% extends 'base.html' %}
+{% load static %}
 {% block content %}
 
-<!--Department Wise Task & Leave Request for Dashboard-->
-<div class="container mt-4">
-        <h4><i class="fas fa-tasks"></i> Department Wise Task & Leave Request</h4>
+<style>
+    .card {
+        border-radius: 10px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    .progress {
+        height: 20px;
+    }
+    .status-dot {
+        height: 10px;
+        width: 10px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 8px;
+    }
+    .red { background-color: #dc3545; }
+    .green { background-color: #28a745; }
+    .purple { background-color: #6f42c1; }
+    .orange { background-color: #fd7e14; }
+    .blue { background-color: #007bff; }
 
-        <div class="row mt-3">
-            <div class="col-md-6 col-lg-3">
-                <div class="card department-card">
-                    <h5 class="text-primary">IT DEPARTMENT</h5>
-                    <p>Pending Task: <b>10</b></p>
-                    <p>Leave Request: <b>30</b></p>
+    .table th, .table td {
+        font-size: 14px;
+        }
+    .card h5 {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+</style>
+
+<div class="container-fluid mt-4">
+    <div class="row align-items-stretch">
+        <!-- Task Statistics -->
+        <div class="col-md-4 mb-4 d-flex">
+            <div class="card p-3 h-100 w-100">
+                <h5>Task Statistics</h5>
+                <hr>
+                <div class="d-flex justify-content-between">
+                    <div class="w-50 ">
+                        Total: {{ total_tasks }}
+                    </div>
+                    <div class="w-50 text-right">
+                        Overdue: {{ overdue_tasks }}
+                    </div>
                 </div>
-            </div>
-            <div class="col-md-6 col-lg-3">
-                <div class="card department-card">
-                    <h5 class="text-primary">EPM DEPARTMENT</h5>
-                    <p>Pending Task: <b>10</b></p>
-                    <p>Leave Request: <b>40</b></p>
-                </div>
-            </div>
-            <div class="col-md-6 col-lg-3">
-                <div class="card department-card">
-                    <h5 class="text-primary">HR DEPARTMENT</h5>
-                    <p>Pending Task: <b>10</b></p>
-                    <p>Leave Request: <b>40</b></p>
-                </div>
-            </div>
-            <div class="col-md-6 col-lg-3">
-                <div class="card department-card">
-                    <h5 class="text-primary">OTHER DEPARTMENT</h5>
-                    <p>Pending Task: <b>10</b></p>
-                    <p>Leave Request: <b>40</b></p>
-                </div>
+              <div class="progress" style="height: 25px;">
+                        {% for status, percent in status_percentages.items %}
+                            <div class="progress-bar
+                                {% if status == 'Completed' %}bg-success
+                                {% elif status == 'Pending' %}bg-warning
+                                {% elif status == 'Inprogress' %}bg-info
+                                {% elif status == 'Claimed Completed' %}bg-primary
+                                {% elif status == 'On Hold' %}bg-danger
+                                {% else %}bg-secondary{% endif %}"
+                                role="progressbar" style="width: {{ percent }}%;"
+                                title="{{ status }}: {{ percent }}%">
+                                {% if percent > 10 %}{{ status }} ({{ percent }}%) {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                <br>
+                <ul class="mt-3 list-unstyled">
+                    <li><span class="status-dot red"></span> Pending Tasks <span class="float-right">{{ status_counts.Pending|default:0 }}</span></li><br>
+                    <li><span class="status-dot green"></span> Completed Tasks <span class="float-right">{{ status_counts.Completed|default:0  }}</span></li><br>
+                    <li><span class="status-dot purple"></span> On Hold Tasks <span class="float-right">{{status_counts.On_Hold|default:0 }}</span></li><br>
+                    <li><span class="status-dot orange"></span> Inprogress Tasks <span class="float-right">{{ status_counts.Inprogress|default:0  }}</span></li><br>
+                    <li><span class="status-dot blue"></span> Claimed Completed Tasks <span class="float-right">{{ status_counts.Claimed_Completed|default:0}}</span></li><br>
+                </ul>
             </div>
         </div>
 
-        <div class="row mt-4">
-            <div class="col-md-4">
-                <div class="card p-3">
-                    <h6>Statistics</h6>
-                    <p>Today Leave: 4 / 8</p>
-                    <div class="progress mb-2">
-                        <div class="progress-bar bg-primary" style="width: 50%"></div>
-                    </div>
-                    <p>Pending Leave: 15 / 32</p>
-                    <div class="progress mb-2">
-                        <div class="progress-bar bg-warning" style="width: 47%"></div>
-                    </div>
-                    <p>Approved Leave: 25 / 50</p>
-                    <div class="progress">
-                        <div class="progress-bar bg-success" style="width: 50%"></div>
+        <!-- Latest Activity -->
+        <div class="col-md-4 mb-4 d-flex">
+            <div class="card p-3 h-100 w-100">
+                <h5>Latest Activity</h5>
+
+            </div>
+        </div>
+            <!-- Recent Projects -->
+            <div class="col-md-4 mb-4 d-flex">
+                <div class="card p-3 h-100 w-100 d-flex flex-column">
+                    <h5>Recent Projects</h5>
+                    <table class="table table-sm mb-2">
+                        <thead>
+                            <tr>
+                                <th>Project Name</th>
+                                <th>Rate Status</th>
+                                <th class="text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for project in projects|slice:":5" %}
+                                <tr>
+                                    <td>{{ project.project_name }}</td>
+                                    <td>{{ project.rate_status }}</td>
+                                    {% if project.project_name != None %}
+                                    <td class="text-center">
+                                         <a href="{% url 'Project:project_detail' project.id %}"><i class="fas fa-ellipsis-v text-muted" style="cursor:pointer;"></i></a>
+                                    </td>
+                                    {% endif %}
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="3">No recent projects</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+
+                    <!-- Horizontal Line -->
+                    <hr class="mt-auto">
+
+                    <!-- View all projects link fixed at the bottom -->
+                    <div class="text-center mt-2">
+                        <a href="{% url 'Project:project_list' %}">View all projects</a>
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card p-3">
-                    <h6>Task Statistics</h6>
-                    <p>Total Tasks: <b>385</b></p>
-                    <p>Overdue Tasks: <b>19</b></p>
-                    <p>Completed Tasks: 166 (43%)</p>
-                    <div class="progress">
-                        <div class="progress-bar bg-success" style="width: 43%"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card p-3">
-                    <h6>Latest Activity</h6>
-                    <p class="text-primary">Approved Request</p>
-                    <p>Lorem ipsum dolor sit amet.</p>
-                    <p class="text-warning">Pending Request</p>
-                    <p>Lorem ipsum dolor sit amet.</p>
-                </div>
+
             </div>
         </div>
     </div>
+</div>
+
 {% endblock %}

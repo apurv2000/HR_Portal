@@ -286,32 +286,27 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js" integrity="sha384-k6d4wzSIapyDyv1kpU366/PK5hCdSbCRGRCMv+eplOQJWyd1fbcAu9OCUj5zNLiq" crossorigin="anonymous"></script>
 
-
-<!--Ecript for show employee based on department in leave type add module-->
+<!--Script for render Task according to Project in Timesheet-->
 <script>
   document.addEventListener('DOMContentLoaded', function () {
-    const departmentSelect = document.getElementById('department');
-    const employeeSelect = document.getElementById('employee');
+    const projectSelects = document.querySelectorAll('.project-select');
 
-    departmentSelect.addEventListener('change', function () {
-      const selectedDept = this.value;
+    projectSelects.forEach(function (projectSelect) {
+      projectSelect.addEventListener('change', function () {
+        const counter = this.getAttribute('data-counter');
+        const selectedProjectId = this.value;
+        const taskSelect = document.querySelector(`.task-select[name="task_${counter}"]`);
 
-      // Show only employees matching the selected department
-      Array.from(employeeSelect.options).forEach(option => {
-        const empDept = option.getAttribute('data-department');
-        if (!selectedDept || empDept === selectedDept || option.value === '') {
-          option.style.display = 'block';
-        } else {
-          option.style.display = 'none';
-        }
+        // Hide all tasks first
+        taskSelect.querySelectorAll('option').forEach(function (option) {
+          if (option.value === '') return; // keep the default "Select Task"
+          option.style.display = option.getAttribute('data-project') === selectedProjectId ? 'block' : 'none';
+        });
+
+        // Reset selection
+        taskSelect.selectedIndex = 0;
       });
-
-      // Reset employee selection
-      employeeSelect.value = '';
     });
-
-    // Trigger change once on page load if a department is pre-selected
-    departmentSelect.dispatchEvent(new Event('change'));
   });
 </script>
 
@@ -351,40 +346,61 @@ document.addEventListener('DOMContentLoaded', function () {
 
 <!-- Script for Timesheet Form Submission with AJAX -->
 <script>
-  document.querySelector('.btn-top').addEventListener('click', function (e) {
-    e.preventDefault();  // Prevent the default button action (form submission)
+$(document).ready(function() {
+    $('#form').on('submit', function(e) {
+        e.preventDefault();
 
-    const form = document.getElementById('form');
-    const formData = new FormData(form);  // Get form data
+        const $form = $(this);
+        const formData = new FormData(this);
 
-    // Submit the form via AJAX
-    fetch("{% url 'Timesheet:timesheet_add' %}", {
-        method: 'POST',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRFToken': '{{ csrf_token }}'  // CSRF token for security
-        },
-        body: formData
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
-            alert("Timesheet saved!");
-            location.reload();  // Reload page after successful submission
-        } else {
-            // Handle errors
-            for (const [dayKey, fields] of Object.entries(data.errors)) {
-                console.log(`Errors for ${dayKey}:`, fields);
-                // Optional: Show errors next to form fields
+        // Clear previous errors
+        $('.text-danger.error-msg').remove();
+        $('.form-control, .form-select').removeClass('is-invalid');
+
+        $.ajax({
+            url: $form.attr('action'),
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function(data) {
+                if (data.success) {
+                    alert("Timesheet submitted successfully!");
+                    $form[0].reset(); // Reset the form
+                    $form.find('input[type="file"]').val('');
+                } else {
+                    for (const [dayKey, fieldErrors] of Object.entries(data.errors)) {
+                        const counter = dayKey.split('_')[1];
+
+                        for (const [field, message] of Object.entries(fieldErrors)) {
+                            const $input = $form.find(`[name="${field}_${counter}"]`);
+                            const $errorDiv = $form.find(`[data-error-for="${field}_${counter}"]`);
+
+                            if ($input.length) {
+                                $input.addClass('is-invalid');
+                            }
+
+                            if ($errorDiv.length) {
+                                $errorDiv.html(`<div class="text-danger error-msg">${message}</div>`);
+                            } else {
+                                $input.after(`<div class="text-danger error-msg">${message}</div>`);
+                            }
+                        }
+                    }
+                }
+            },
+            error: function(xhr) {
+                alert("An unexpected error occurred.");
+                console.error("Error:", xhr);
             }
-        }
-    })
-    .catch(error => {
-        console.error('Error submitting form:', error);
-        alert('An error occurred while submitting the form. Please try again.');
+        });
     });
-  });
+});
 </script>
+
 
 
 <!-- Script to dynamically update remaining leave -->
@@ -596,14 +612,15 @@ $(document).ready(function () {
 </script>
 <!-- JavaScript to toggle visibility for leave details toggles-->
 <script>
-  function toggleCollapse(id) {
-    var element = document.getElementById(id);
-    if (element.style.display === "none" || element.style.display === "") {
-      element.style.display = "block";
+function toggleCollapse(elementId) {
+    var collapseElement = document.getElementById(elementId);
+    if (collapseElement.style.display === "none" || collapseElement.style.display === "") {
+        collapseElement.style.display = "block";
     } else {
-      element.style.display = "none";
+        collapseElement.style.display = "none";
     }
-  }
+}
+
 </script>
 <!--For Leaning Video-->
 <script>
