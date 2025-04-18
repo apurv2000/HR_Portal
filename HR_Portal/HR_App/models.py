@@ -58,6 +58,12 @@ class LeaveType(models.Model):
     code = models.CharField(max_length=10, unique=True)
     accrual = models.BooleanField(default=False)
     effective_after = models.PositiveIntegerField(null=True, blank=True)  # In years
+    effective_after_values=[
+        ('Year','Year'),
+        ('Month','Month'),
+        ('Day','Day'),
+    ]
+    effective_after_value=models.CharField(max_length=10, choices=effective_after_values, default='Year')
     effective_from_choices = [
         ('DOJ', 'Date of Joining'),
         ('DOE', 'Date of Employment'),

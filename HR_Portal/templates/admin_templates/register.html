@@ -24,42 +24,43 @@
             <div class="col-md-4">
               <label for="fullName">Full Name <span class="text-danger">*</span></label>
               <input type="text" class="form-control" id="fullName" name="Full_Name"
-                     value="{{ employee.name|default:'' }}" placeholder="Enter full name" required>
+                     value="{{ employee.name|default:'' }}" placeholder="Enter full name" >
             </div>
 
             <div class="col-md-4">
               <label for="email">Email <span class="text-danger">*</span></label>
               <input type="email" class="form-control" id="email" name="Email"
-                     value="{{ employee.email|default:'' }}" placeholder="Enter email" required>
+                     value="{{ employee.email|default:'' }}" placeholder="Enter email" >
             </div>
 
             <div class="col-md-4">
               <label for="password">Password <span class="text-danger">*</span></label>
               <input type="password" class="form-control" id="password" name="PWD"
-                     placeholder="Enter password" {% if not employee %}required{% endif %}>
+                     placeholder="Enter password" >
             </div>
 
             <div class="col-md-4">
               <label for="repassword">Retype Password</label>
               <input type="password" class="form-control" id="repassword" name="RPWD"
-                     placeholder="Retype password" {% if not employee %}required{% endif %}>
+                     placeholder="Retype password" >
             </div>
 
-            <div class="col-md-4">
+         <div class="col-md-4">
               <label>Gender</label>
               <div class="d-flex">
-                <input type="radio" name="gender" value="male" class="me-1"
-                       {% if employee.gender == "male" %}checked{% endif %}> Male
-                <br>
-                <input type="radio" name="gender" value="female" class="ms-3 me-1"
-                       {% if employee.gender == "female" %}checked{% endif %}> Female
+                  <input type="radio" name="gender" value="male" class="me-1"
+                         {% if employee.gender == "male" %}checked{% endif %}> Male
+                  <input type="radio" name="gender" value="female" class="ms-3 me-1"
+                         {% if employee.gender == "female" %}checked{% endif %}> Female
               </div>
-            </div>
+           <small id="gender-error" class="text-danger"></small> <!-- This div will display gender errors -->
+          </div>
+
 
             <div class="col-md-4">
               <label for="dob">Date of Birth <span class="text-danger">*</span></label>
               <input type="date" class="form-control" id="dob" name="DOB"
-                     value="{{ employee.dob}}" required>
+                     value="{{ employee.dob}}" >
             </div>
 
             <div class="col-md-4">
@@ -70,7 +71,7 @@
 
             <div class="col-md-4">
               <label for="role">Role <span class="text-danger">*</span></label>
-              <select class="form-control" id="role" name="role" required>
+              <select class="form-control" id="role" name="role" >
                 <option value="">Select Role</option>
                 <option value="Administrator" {% if employee.role == "Administrator" %}selected{% endif %}>Administrator</option>
                 <option value="Manager" {% if employee.role == "Manager" %}selected{% endif %}>Manager</option>
@@ -79,28 +80,46 @@
             </div>
 
 
+             <!-- Department Dropdown -->
             <div class="col-md-4">
-              <label for="designation">Designation <span class="text-danger">*</span></label>
-              <input type="text" class="form-control" id="designation" name="Designation"
-                     value="{{ employee.designation|default:'' }}" placeholder="Enter designation" required>
-            </div>
+                <label for="department">Department <span class="text-danger">*</span></label>
+                <select class="form-control" id="department" name="Department">
+                  <option value="">Select Department</option>
+                  {% for dept in departments %}
+                    <option value="{{ dept.name }}" {% if employee.department and employee.department.id == dept.id %}selected{% endif %}>
+                      {{ dept.name }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </div>
 
-            <div class="col-md-4">
-              <label for="designation">Department <span class="text-danger">*</span></label>
-              <input type="text" class="form-control" id="department" name="Department"
-                     value="{{ employee.department|default:'' }}" placeholder="Enter designation" required>
-            </div>
+              <div class="col-md-4">
+                <label for="designation">Designation <span class="text-danger">*</span></label>
+                <select class="form-control" id="designation" name="Designation">
+                  {% if not employee  %}
+                     <option value="">Select Designation</option>
+                  {% endif %}
+                  {% for desig in designations %}
+                    <option value="{{ desig.title }}" data-dept="{{ desig.department.name }}"
+                      {% if employee.designation and employee.designation.id == desig.id %}selected{% endif %}>
+                      {{ desig.title }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </div>
+
+
 
             <div class="col-md-4">
               <label for="permanentAddress">Permanent Address <span class="text-danger">*</span></label>
               <input type="text" class="form-control" id="permanentAddress" name="Per_Address"
-                     value="{{ employee.permanent_address|default:'' }}" placeholder="Enter permanent address" required>
+                     value="{{ employee.permanent_address|default:'' }}" placeholder="Enter permanent address" >
             </div>
 
             <div class="col-md-4">
               <label for="currentAddress">Current Address  <span class="text-danger">*</span></label>
               <input type="text" class="form-control" id="currentAddress" name="Cur_Address"
-                     value="{{ employee.current_address|default:'' }}" placeholder="Enter current address" required>
+                     value="{{ employee.current_address|default:'' }}" placeholder="Enter current address" >
             </div>
 
             <div class="col-md-4">
@@ -112,7 +131,7 @@
             <div class="col-md-4">
               <label for="phone">Phone Number <span class="text-danger">*</span></label>
               <input type="number" class="form-control" id="phone" name="Phone"
-                     value="{{ employee.phone_number|default:'' }}" placeholder="Enter phone number" required>
+                     value="{{ employee.phone_number|default:'' }}" placeholder="Enter phone number" >
             </div>
 
             <div class="col-md-4">
@@ -158,5 +177,47 @@
     </div>
   </div>
 </div>
+
+<!--Script for Show designation according Department-->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const departmentSelect = document.getElementById("department");
+  const designationSelect = document.getElementById("designation");
+
+  // Store all original options
+  const allDesignationOptions = Array.from(designationSelect.options);
+
+  // Store pre-selected designation from Django
+  const selectedDesignationId = "{{ employee.designation.id|default:'' }}";
+
+  function filterDesignationsByDepartment(deptId) {
+    // Reset the options to the "Select Designation" option
+    designationSelect.innerHTML = '<option value="">Select Designation</option>';
+
+    // Add designations that belong to the selected department
+    allDesignationOptions.forEach(option => {
+      if (!option.dataset.dept || option.dataset.dept === deptId) {
+        const cloned = option.cloneNode(true);
+        if (cloned.value === selectedDesignationId) {
+          cloned.selected = true;
+        }
+        designationSelect.appendChild(cloned);
+      }
+    });
+  }
+
+  // Trigger filter on change
+  departmentSelect.addEventListener("change", function () {
+    filterDesignationsByDepartment(this.value);
+  });
+
+  // Initial call (on page load)
+  if (departmentSelect.value) {
+    filterDesignationsByDepartment(departmentSelect.value);
+  }
+});
+
+</script>
+
 
 {% endblock %}

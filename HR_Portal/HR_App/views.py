@@ -25,7 +25,7 @@ from Project.models import Project,Task
 from .models import EmployeeBISP, Leave, LeaveType, Designation, Department, HandbookPDF, \
     HandbookAcknowledgement, EmpLeaveType  # Import your Employee model
 from openpyxl import Workbook
-
+from datetime import date, timedelta
 
 
 # Create your views here.
@@ -197,7 +197,14 @@ def Contact(request):
 def Register(request):
     if not request.session.get('employee_id'):
         return redirect('Login_user_page')
-    return render(request,'admin_templates/register.html')
+
+
+    departments = Department.objects.all()
+    designations = Designation.objects.select_related('department').all()
+    return render(request,'admin_templates/register.html',{
+            'departments': departments,
+            'designations': designations,
+        })
 
 def Login_page(request):
     return render(request,'admin_templates/login.html')
@@ -411,9 +418,12 @@ def change_leave_status(request, id, status):
         return redirect('Login_user_page')
     leave_type = get_object_or_404(LeaveType, id=id)
 
-    if status in ['active', 'inactive', 'hidden']:
-        leave_type.status = status
-        leave_type.save()
+    if status in ['active', 'inactive', 'hidden', 'delete']:
+        if status == 'delete':
+            leave_type.delete()  # Corrected this to actually call delete() method
+        else:
+            leave_type.status = status
+            leave_type.save()
 
     return redirect('LeaveDetail')  # Replace with your actual view name
 
@@ -423,7 +433,7 @@ def leave_detail_view(request):
         return redirect('Login_user_page')
     # Get all leave types
     leave_types = LeaveType.objects.all()
-    employee_leaves = Leave.objects.all()  # Modify based on your queryset logic
+    employee_leaves = Leave.objects.all()
 
 
     # Create a dictionary: {LeaveType: [Leave, Leave, ...]}
@@ -463,7 +473,10 @@ def update_emp_page(request,id):
     if not request.session.get('employee_id'):
         return redirect('Login_user_page')
     employee = get_object_or_404(EmployeeBISP, id=id)
-    return render(request,'admin_templates/register.html', {'employee': employee})
+    departments = Department.objects.all()
+    designations = Designation.objects.select_related('department').all()
+    return render(request,'admin_templates/register.html', {'employee': employee,'departments': departments,
+            'designations': designations,})
 
 #For Update Employee with ID
 def update_employee(request, id):
@@ -493,10 +506,11 @@ def update_employee(request, id):
         role = request.POST.get("role", '').strip()
 
         # Validate required fields (same as in register)
+        # Validate required fields
         required_fields = {
-            "Full_Name": name, "Email": email, "PWD": password, "RPWD": confirm_password, "DOB": dob,
-            "Nationality": nationality, "Designation": designation, "Per_Address": per_address, "Role": role,
-            "Cur_Address": cur_address, "Aadhar": aadhar, "Phone": phone, "DOJ": doj, "workloc": workloc, "gender": gender
+            "Full_Name": name, "PWD": password, "RPWD": confirm_password,
+            "Nationality": nationality, "Per_Address": per_address, "Role": role,
+            "Cur_Address": cur_address, "Aadhar": aadhar, "Phone": phone, "workloc": workloc, "gender": gender
         }
 
         for field, value in required_fields.items():
@@ -507,12 +521,19 @@ def update_employee(request, id):
         if name and not re.match(r'^[A-Za-z\s]+$', name):
             errors["Full_Name"] = "Name should contain only letters."
 
-        # Validate Email format
-        try:
-            email = email.lower()
-            validate_email(email)
-        except ValidationError:
-            errors["Email"] = "Invalid email format."
+        # Validate Role
+        if not role:
+            errors["role"]=f"Role is required"
+
+        # Validate Email
+        if not email:
+                errors.setdefault("Email", []).append("Email is required.")
+        else:
+            try:
+                email = email.lower()
+                validate_email(email)
+            except ValidationError:
+                errors.setdefault("Email", []).append("Invalid email format.")
 
         # Validate password confirmation if provided
         if password and password != confirm_password:
@@ -527,39 +548,52 @@ def update_employee(request, id):
             errors["Phone"] = "Phone number must be exactly 10 digits."
 
         # Validate Date of Joining (DOJ)
-        try:
-            today = datetime.today()
-            doj_date = datetime.strptime(doj, "%Y-%m-%d").date()
-            if doj_date.year < today.year:
-                errors["DOJ"] = "Date of Joining cannot be from a previous year."
-        except ValueError:
-            errors["DOJ"] = "Invalid Date of Joining format. Use YYYY-MM-DD."
+        if not doj:
+            errors.setdefault("DOJ", []).append("DOJ is required.")
+        else:
+            try:
+                today = datetime.today()
+                doj_date = datetime.strptime(doj, "%Y-%m-%d").date()
+                if doj_date.year < today.year:
+                    errors["DOJ"] = "Date of Joining cannot be from a previous year."
+            except ValueError:
+                errors["DOJ"] = "Invalid Date of Joining format. Use YYYY-MM-DD."
 
         # Validate Date of Birth (DOB)
-        try:
-            dob_date = datetime.strptime(dob, "%Y-%m-%d").date()
-            min_dob = datetime(1980, 1, 1).date()  # Set minimum DOB as January 1, 1980
-            if dob_date < min_dob:
-                errors["DOB"] = "Date of Birth must be on or after January 1, 1980"
-            elif dob_date > datetime.now().date():
-                errors["DOB"] = "Date of Birth must be less than present date"
-        except ValueError:
-            errors["DOB"] = "Invalid Date of Birth format. Use YYYY-MM-DD."
-
-        # Validate Designation and Department
-
-        department_obj = Department.objects.get_or_create(name=department)[0]
-        designation_obj = Designation.objects.get_or_create(title=designation,department=department_obj)[0]
+        if not dob:
+            errors.setdefault("DOB", []).append("DOB is required.")
+        else:
+            try:
+                dob_date = datetime.strptime(dob, "%Y-%m-%d").date()
+                min_dob = datetime(1980, 1, 1).date()  # Set minimum DOB as January 1, 1980
+                if dob_date < min_dob:
+                    errors["DOB"] = "Date of Birth must be on or after January 1, 1980"
+                elif dob_date > datetime.now().date():
+                    errors["DOB"] = "Date of Birth must be less than present date"
+            except ValueError:
+                errors["DOB"] = "Invalid Date of Birth format. Use YYYY-MM-DD."
 
 
-        if designation not in ALLOWED_DESIGNATIONS:
-            errors["Designation"] = f"Invalid designation. Allowed: {', '.join(ALLOWED_DESIGNATIONS)}"
+        # Validate Department
+        if not department:
+            errors.setdefault("Department", []).append("Department is required.")
+        else:
+            try:
+                department_obj, created = Department.objects.get_or_create(name=department)
+            except Exception as e:
+                errors["Department"] = "Invalid department selected."
 
-        if department not in ALLOWED_DEPARTMENT:
-            errors["Department"] = f"Invalid department. Allowed: {', '.join(ALLOWED_DEPARTMENT)}"
+        # Validate Designation
+        if not designation:
+            errors.setdefault("Designation", []).append("Designation is required.")
+        else:
+            # Only proceed with DB interaction if input is valid
+            try:
+                designation_obj, created = Designation.objects.get_or_create(title=designation,
+                                                                             department=department_obj)
+            except Exception as e:
+                errors["Designation"] =f"{department} has no designation titled '{designation}'."
 
-        if len(designation) > MAX_DESIGNATION_LENGTH:
-            errors["Designation"] = f"Designation must be under {MAX_DESIGNATION_LENGTH} characters."
 
         # Validate profile image format
         error_message = validate_profile_picture(profile_img)
@@ -642,9 +676,9 @@ def register_user(request):
 
         # Validate required fields
         required_fields = {
-            "Full_Name": name, "Email": email, "PWD": password, "RPWD": confirm_password, "DOB": dob,
-            "Nationality": nationality, "Designation": designation, "Per_Address": per_address, "Role": role,
-            "Cur_Address": cur_address, "Aadhar": aadhar, "Phone": phone, "DOJ": doj, "workloc": workloc, "gender": gender
+            "Full_Name": name, "PWD": password, "RPWD": confirm_password,
+            "Nationality": nationality,  "Per_Address": per_address, "Role": role,
+            "Cur_Address": cur_address, "Aadhar": aadhar, "Phone": phone, "workloc": workloc, "gender": gender
         }
 
         for field, value in required_fields.items():
@@ -655,12 +689,26 @@ def register_user(request):
         if name and not re.match(r'^[A-Za-z\s]+$', name):
             errors["Full_Name"] = "Name should contain only letters."
 
-        # Validate Email format
-        try:
-            email = email.lower()
-            validate_email(email)
-        except ValidationError:
-            errors["Email"] = "Invalid email format."
+        #Validate Role
+        if not role:
+            errors["role"] = f"Role is required"
+
+        # Validate Email
+        if not email:
+            errors.setdefault("Email", []).append("Email is required.")
+        else:
+            try:
+                email = email.lower()
+                validate_email(email)
+
+                # Check if email domain is gmail.com or yahoo.com
+                allowed_domains = ['gmail.com', 'yahoo.com']
+                domain = email.split('@')[-1]
+                if domain not in allowed_domains:
+
+                    errors.setdefault("Email", []).append("Only Gmail and Yahoo email addresses are allowed.")
+            except ValidationError:
+                errors.setdefault("Email", []).append("Invalid email format.")
 
         # Validate password confirmation
         if password != confirm_password:
@@ -675,37 +723,50 @@ def register_user(request):
             errors["Phone"] = "Phone number must be exactly 10 digits."
 
         # Validate Date of Joining (DOJ)
-        try:
-            today = datetime.today()
-            doj_date = datetime.strptime(doj, "%Y-%m-%d").date()
-            if doj_date.year < today.year:
-                errors["DOJ"] = "Date of Joining cannot be from a previous year."
-        except ValueError:
-            errors["DOJ"] = "Invalid Date of Joining format. Use YYYY-MM-DD."
+        if not doj:
+            errors.setdefault("DOJ", []).append("DOJ is required.")
+        else:
+            try:
+                today = datetime.today()
+                doj_date = datetime.strptime(doj, "%Y-%m-%d").date()
+                if doj_date.year < today.year:
+                    errors["DOJ"] = "Date of Joining cannot be from a previous year."
+            except ValueError:
+                errors["DOJ"] = "Invalid Date of Joining format. Use YYYY-MM-DD."
 
         # Validate Date of Birth (DOB)
-        try:
-            dob_date = datetime.strptime(dob, "%Y-%m-%d").date()
-            min_dob = datetime(1980, 1, 1).date()  # Set minimum DOB as January 1, 1980
-            if dob_date < min_dob:
-                errors["DOB"] = "Date of Birth must be on or after January 1, 1980"
-            elif dob_date > datetime.now().date():
-                errors["DOB"] = "Date of Birth must be less than present date"
-        except ValueError:
-            errors["DOB"] = "Invalid Date of Birth format. Use YYYY-MM-DD."
+        if not  dob :
+            errors.setdefault("DOB", []).append("DOB is required.")
+        else:
+            try:
+                dob_date = datetime.strptime(dob, "%Y-%m-%d").date()
+                min_dob = datetime(1980, 1, 1).date()  # Set minimum DOB as January 1, 1980
+                if dob_date < min_dob:
+                    errors["DOB"] = "Date of Birth must be on or after January 1, 1980"
+                elif dob_date > datetime.now().date():
+                    errors["DOB"] = "Date of Birth must be less than present date"
+            except ValueError:
+                errors["DOB"] = "Invalid Date of Birth format. Use YYYY-MM-DD."
 
-        # Validate Designation and Department
-        department_obj = Department.objects.get_or_create(name=department)[0]
-        designation_obj = Designation.objects.get_or_create(title=designation, department=department_obj)[0]
+        # Validate Department
+        if not department:
+                errors.setdefault("Department", []).append("Department is required.")
+        else:
+            try:
+                department_obj, created = Department.objects.get_or_create(name=department)
+            except Exception as e:
+                errors["Department"] = f"{department} have no {designation}"
 
-        if designation not in ALLOWED_DESIGNATIONS:
-            errors["Designation"] = f"Invalid designation. Allowed: {', '.join(ALLOWED_DESIGNATIONS)}"
-
-        if department not in ALLOWED_DEPARTMENT:
-            errors["Department"] = f"Invalid department. Allowed: {', '.join(ALLOWED_DEPARTMENT)}"
-
-        if len(designation) > MAX_DESIGNATION_LENGTH:
-            errors["Designation"] = f"Designation must be under {MAX_DESIGNATION_LENGTH} characters."
+        # Validate Designation
+        if not designation:
+                errors.setdefault("Designation", []).append("Designation is required.")
+        else:
+                # Only proceed with DB interaction if input is valid
+            try:
+                designation_obj, created = Designation.objects.get_or_create(title=designation,
+                                                                                 department=department_obj)
+            except Exception as e:
+                errors["Designation"] = f"{department} has no designation titled '{designation}'."
 
         # Validate profile image format
         error_message = validate_profile_picture(profile_img)
@@ -860,40 +921,63 @@ def leave_Add_page(request):
     employee_id = request.session['employee_id']
     employee = EmployeeBISP.objects.filter(id=employee_id).first()
 
-    # Get employee-specific leave records
-    emp_leaves = EmpLeaveType.objects.select_related('leave_type').filter(
-        employee=employee,
-        leave_type__status='active'
-    ) if employee else []
+    emp_leave_list = []
 
-    emp_leave_list = [
-        {
-            'id': e.leave_type.id,
-            'name': e.leave_type.name,
-            'total_leave': e.total_leave,
-            'remaining_leave': e.remaining_leave,
-            'availed_leave': e.availed_leave,
-        }
-        for e in emp_leaves
-    ]
+    if employee:
+        today = date.today()
 
-    # Get global leave types not tied to any employee
-    assigned_type_ids = EmpLeaveType.objects.values_list('leave_type_id', flat=True)
-    global_leave_types = LeaveType.objects.filter(status='active').exclude(id__in=assigned_type_ids)
+        def is_effective(leave_type):
+            if leave_type.effective_after is None:
+                return True
 
-    for leave in global_leave_types:
-        emp_leave_list.append({
-            'id': leave.id,
-            'name': leave.name,
-            'total_leave': '-',
-            'remaining_leave': '-',
-            'availed_leave': '-',
-        })
+            # Calculate effective date using approximate days
+            if leave_type.effective_after_value == 'Year':
+                days_to_add = leave_type.effective_after * 365
+            elif leave_type.effective_after_value == 'Month':
+                days_to_add = leave_type.effective_after * 30
+            elif leave_type.effective_after_value == 'Day':
+                days_to_add = leave_type.effective_after
+            else:
+                return True  # fallback
+
+            effective_date = today + timedelta(days=days_to_add)
+            return date.today() >= effective_date
+
+        # Assigned leave types
+        emp_leaves = EmpLeaveType.objects.select_related('leave_type').filter(
+            employee=employee,
+            leave_type__status='active'
+        )
+
+        for e in emp_leaves:
+            if is_effective(e.leave_type):
+                emp_leave_list.append({
+                    'id': e.leave_type.id,
+                    'name': e.leave_type.name,
+                    'total_leave': e.total_leave,
+                    'remaining_leave': e.remaining_leave,
+                    'availed_leave': e.availed_leave,
+                })
+
+        # Global leave types
+        assigned_ids = EmpLeaveType.objects.values_list('leave_type_id', flat=True)
+        global_leaves = LeaveType.objects.filter(status='active').exclude(id__in=assigned_ids)
+
+        for leave in global_leaves:
+            if is_effective(leave):
+                emp_leave_list.append({
+                    'id': leave.id,
+                    'name': leave.name,
+                    'total_leave': '-',
+                    'remaining_leave': '-',
+                    'availed_leave': '-',
+                })
 
     return render(request, 'leave_templates/leave_add.html', {
         'employee': employee,
         'leave_data': emp_leave_list,
     })
+
 
 def Apply_leave(request):
     if not request.session.get('employee_id'):
@@ -956,52 +1040,44 @@ def Apply_leave(request):
 
         # Proceed with the rest of the logic only if leave_obj is valid
         if leave_obj:
-            # Initialize leave days and half day choices
             leave_days = 0
             half_day_choices = {}
 
             if from_date and till_date:
-                # Handle weekends and holidays as leave
+                dates = []
                 current = from_date
                 while current <= till_date:
-                    key = f"halfday_option_{current}"
-                    choice = request.POST.get(key)
-
-                    # Determine if current day is a weekend (Saturday or Sunday)
-                    is_weekend = current.weekday() in [6]  # 5 is Saturday, 6 is Sunday
-
-                    # Check if it's a holiday (You would need a list of holidays or a holiday-checking function)
-                    is_holiday = False  # Replace with actual holiday-checking logic if needed
-
-                    # Determine if it's a leave day (weekend or holiday)
-                    is_leave_day = False
-
-                    if leave_obj.count_weekends_as_leave and is_weekend:
-                        is_leave_day = True
-
-                    if leave_obj.count_holidays_as_leave and is_holiday:
-                        is_leave_day = True
-
-                    # If the current day is a weekend or holiday and we shouldn't count it as leave
-                    if (leave_obj.count_weekends_as_leave and is_weekend) or (
-                            leave_obj.count_holidays_as_leave and is_holiday):
-                        # Skip weekends and holidays completely from leave counting
-                        current += timedelta(days=1)  # Move to the next day
-                        continue  # Skip this iteration (do not count it as leave)
-
-                    # If a half-day is selected, count it as leave
-                    if choice == "first_half" or choice == "second_half":
-                        half_day_name = choice
-                        leave_days += 0.5
-                        half_day_choices[str(current)] = choice
-                    else:
-                        # Otherwise, count the day as a full leave day
-                        leave_days += 1
-
-                    # Move to the next day
+                    dates.append(current)
                     current += timedelta(days=1)
 
-                print(f"Total leave days calculated: {leave_days}")
+                for i, date in enumerate(dates):
+                    key = f"halfday_option_{date}"
+                    choice = request.POST.get(key)
+
+                    is_sunday = date.weekday() == 6
+                    is_holiday = False  # Add your real holiday logic here
+
+                    # Always count weekday
+                    if not is_sunday and not is_holiday:
+                        if choice in ["first_half", "second_half"]:
+                            leave_days += 0.5
+                            half_day_choices[str(date)] = choice
+                        else:
+                            leave_days += 1
+
+                    # Sunday/holiday logic — count only if sandwiched
+                    elif i > 0 and i < len(dates) - 1:
+                        prev = dates[i - 1]
+                        next = dates[i + 1]
+                        prev_leave = request.POST.get(f"halfday_option_{prev}") or (prev.weekday() != 6)
+                        next_leave = request.POST.get(f"halfday_option_{next}") or (next.weekday() != 6)
+
+                        if is_sunday and leave_obj.count_weekends_as_leave and prev_leave and next_leave:
+                            leave_days += 1
+                        elif is_holiday and leave_obj.count_holidays_as_leave and prev_leave and next_leave:
+                            leave_days += 1
+
+                print(f"Total leave days: {leave_days}")
                 print("Half-day details:", half_day_choices)
 
             # After leave_obj is fetched and validated
@@ -1054,6 +1130,7 @@ def Apply_leave(request):
     return render(request, "leave_templates/leave_add.html",{"errors": errors})
 
 
+
 #Show Leave List for particular user
 def Leave_list(request):
     if not request.session.get('employee_id'):
@@ -1064,7 +1141,7 @@ def Leave_list(request):
         current_employee = EmployeeBISP.objects.prefetch_related(
             Prefetch(
                 'leave_set',
-                queryset=Leave.objects.order_by('-apply_date','-id')#Pending
+                queryset=Leave.objects.all().order_by('-created_at')  # Order newest first
             )
         ).get(email=user.email)
     except EmployeeBISP.DoesNotExist:
@@ -1137,6 +1214,7 @@ def add_leave_type(request):
         leave_time = request.POST.get('leave_time') or None
         leave_time_unit = request.POST.get('leave_time_unit')
         leave_frequency = request.POST.get('leave_time_frequency')
+        effective_after_unit=request.POST.get('effective_after_unit')
 
         if not leave_time:
             errors['leave_time']="Leave time is required"
@@ -1205,6 +1283,7 @@ def add_leave_type(request):
                     leave_type=leave_type,
                     accrual=accrual,
                     effective_after=int(effective_after) if effective_after else None,
+                    effective_after_value=effective_after_unit,
                     effective_from=effective_from,
                     leave_time=int(leave_time) if leave_time else None,
                     leave_time_unit=leave_time_unit,
@@ -1294,6 +1373,8 @@ def update_leave_type(request, leave_type_id):
         leave_time = request.POST.get('leave_time') or None
         leave_time_unit = request.POST.get('leave_time_unit')
         leave_frequency = request.POST.get('leave_time_frequency')
+        effective_after_unit = request.POST.get('effective_after_unit')
+        print(effective_after_unit)
 
         if not leave_time:
             errors['leave_time'] = "Leave time is required"
@@ -1361,6 +1442,7 @@ def update_leave_type(request, leave_type_id):
                 leave_type.leave_type = leave_type_value
                 leave_type.accrual = accrual
                 leave_type.effective_after = int(effective_after) if effective_after else None
+                leave_type.effective_after_value=effective_after_unit
                 leave_type.effective_from = effective_from
                 leave_type.leave_time = int(leave_time) if leave_time else None
                 leave_type.leave_time_unit = leave_time_unit
@@ -1383,7 +1465,7 @@ def update_leave_type(request, leave_type_id):
                 else:
                     old_employee_type = None
 
-                # Save updated LeaveType (already done above)
+
                 leave_type.save()
 
                 # Update EmpLeaveType records
@@ -1416,17 +1498,16 @@ def update_leave_type(request, leave_type_id):
                             EmpLeaveType.objects.filter(leave_type=leave_type).delete()
 
                         employees = EmployeeBISP.objects.all()
-                        EmpLeaveType.objects.bulk_update_or_create(
-                            [EmpLeaveType(
+                        for emp in employees:
+                            EmpLeaveType.objects.update_or_create(
                                 employee=emp,
                                 leave_type=leave_type,
-                                total_leave=leave_time,
-                                remaining_leave=leave_time,
-                                availed_leave=0
-                            ) for emp in employees],
-                            ['employee', 'leave_type'],
-                            update_fields=['total_leave', 'remaining_leave', 'availed_leave']
-                        )
+                                defaults={
+                                    'total_leave': leave_time,
+                                    'remaining_leave': leave_time,
+                                    'availed_leave': 0
+                                }
+                            )
 
             return JsonResponse({'status': 'success', 'message': 'Leave Type updated successfully.'})
 
