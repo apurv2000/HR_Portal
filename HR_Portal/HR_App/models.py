@@ -28,29 +28,68 @@ class EmployeeBISP(models.Model):
     ]
 
     name = models.CharField(max_length=100)
-    dob =  models.CharField(max_length=10)
-    gender = models.CharField(max_length=10)
-    nationality = models.CharField(max_length=100)
-    permanent_address = models.CharField(max_length=200)
-    current_address = models.CharField(max_length=200)
+    dob =  models.CharField(max_length=10,null=True)
+    gender = models.CharField(max_length=10,null=True)
+    nationality = models.CharField(max_length=100,null=True)
+    permanent_address = models.CharField(max_length=200,null=True)
+    current_address = models.CharField(max_length=200,null=True)
 
     phone_regex = RegexValidator(
         regex=r'^\+?1?\d{9,15}$',
         message="Phone number must be entered in the format: '+999999999'. Up to 15 digits allowed."
     )
-    phone_number = models.CharField(validators=[phone_regex], max_length=20)
+    phone_number = models.CharField(validators=[phone_regex], max_length=20,null=True)
 
 
 
     email = models.EmailField(max_length=50)
     password=models.CharField(max_length=200)
-    aadhar_card=models.CharField(max_length=200)
-    date_of_join=models.CharField(max_length=200)
-    work_location=models.CharField(max_length=200)
+    aadhar_card=models.CharField(max_length=200,null=True)
+    date_of_join=models.CharField(max_length=200,null=True)
+    work_location=models.CharField(max_length=200,null=True)
     designation = models.ForeignKey(Designation, on_delete=models.SET_NULL, null=True)
     department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True)
     role = models.CharField(max_length=50, choices=ROLE_CHOICES, default='Employee')
     profile_picture = models.ImageField(upload_to="profile_pics/", blank=True, null=True)
+
+    # Additional fields for versioning and soft deletion
+    version = models.IntegerField(default=1)  # Start from version 1
+    status = models.CharField(max_length=20, default="active")  # 'active' or 'deleted'
+    timestamp = models.DateTimeField(auto_now=True)  # Automatically updates on save
+
+    def soft_delete(self):
+        """Mark the employee as deleted (soft delete)."""
+        self.status = 'deleted'
+        self.save()
+
+    def save(self, *args, **kwargs):
+        if self.pk:  # If updating an existing record
+            self.version += 1  # Increment version
+        super().save(*args, **kwargs)
+
+class EmployeeBISPHistory(models.Model):
+    employee = models.ForeignKey(EmployeeBISP, related_name='history', on_delete=models.CASCADE)
+    name = models.CharField(max_length=100)
+    dob = models.CharField(max_length=10, null=True)
+    gender = models.CharField(max_length=10, null=True)
+    nationality = models.CharField(max_length=100, null=True)
+    permanent_address = models.CharField(max_length=200, null=True)
+    current_address = models.CharField(max_length=200, null=True)
+    phone_number = models.CharField(max_length=20, null=True)
+    email = models.EmailField(max_length=50)
+    password = models.CharField(max_length=200)
+    aadhar_card = models.CharField(max_length=200, null=True)
+    date_of_join = models.CharField(max_length=200, null=True)
+    work_location = models.CharField(max_length=200, null=True)
+    designation = models.ForeignKey(Designation, on_delete=models.SET_NULL, null=True)
+    department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True)
+    role = models.CharField(max_length=50, choices=EmployeeBISP.ROLE_CHOICES, default='Employee')
+    profile_picture = models.ImageField(upload_to="profile_pics/", blank=True, null=True)
+    version = models.IntegerField(default=1)
+    timestamp = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"History for {self.employee.name} - Version {self.version}"
 
 
 class LeaveType(models.Model):
@@ -73,6 +112,7 @@ class LeaveType(models.Model):
         ('active', 'Active'),
         ('inactive', 'Inactive'),
         ('hidden', 'Hidden'),
+        ('delete','Delete')
     ]
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='active')
     leave_time = models.PositiveIntegerField(null=True, blank=True)
@@ -112,9 +152,49 @@ class LeaveType(models.Model):
         help_text="Optional: Restrict to a specific department"
     )
 
+    #For Versioning
+    version = models.PositiveIntegerField(default=1)
+    timestamp = models.DateTimeField(auto_now=True)
+    is_deleted = models.BooleanField(default=False)  # Soft delete flag
+
+    def save(self, *args, **kwargs):
+        if self.pk:  # If updating an existing record
+            self.version += 1  # Increment version
+        super().save(*args, **kwargs)
+
 
     def __str__(self):
         return self.name
+
+class LeaveTypeHistory(models.Model):
+    leave_type = models.ForeignKey(LeaveType, on_delete=models.CASCADE, related_name='history')
+    name = models.CharField(max_length=100)
+    code = models.CharField(max_length=10)
+    accrual = models.BooleanField(default=False)
+    effective_after = models.PositiveIntegerField(null=True, blank=True)
+    effective_after_value = models.CharField(max_length=10)
+    effective_from = models.CharField(max_length=3)
+
+    status = models.CharField(max_length=10)
+    leave_time = models.PositiveIntegerField(null=True, blank=True)
+    leave_time_unit = models.CharField(max_length=10)
+    leave_type_field = models.CharField(max_length=20)
+
+    count_weekends_as_leave = models.BooleanField(default=True)
+    count_holidays_as_leave = models.BooleanField(default=False)
+
+    leave_frequency = models.CharField(max_length=10)
+
+    gender = models.CharField(max_length=10, blank=True, null=True)
+    marital_status = models.CharField(max_length=10, blank=True, null=True)
+    department = models.ForeignKey('Department', on_delete=models.SET_NULL, blank=True, null=True)
+
+    version = models.PositiveIntegerField()
+    timestamp = models.DateTimeField()
+
+    def __str__(self):
+        return f"{self.name} - v{self.version}"
+
 
 class EmpLeaveType(models.Model):
     employee = models.ForeignKey('EmployeeBISP', on_delete=models.CASCADE)

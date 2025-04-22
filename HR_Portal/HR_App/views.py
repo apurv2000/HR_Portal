@@ -20,10 +20,10 @@ from datetime import datetime, timedelta
 from django.utils import timezone
 from django.contrib import messages
 from django.shortcuts import render
-from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.csrf import csrf_protect, csrf_exempt
 from Project.models import Project,Task
 from .models import EmployeeBISP, Leave, LeaveType, Designation, Department, HandbookPDF, \
-    HandbookAcknowledgement, EmpLeaveType  # Import your Employee model
+    HandbookAcknowledgement, EmpLeaveType, EmployeeBISPHistory, LeaveTypeHistory  # Import your Employee model
 from openpyxl import Workbook
 from datetime import date, timedelta
 
@@ -418,10 +418,8 @@ def change_leave_status(request, id, status):
         return redirect('Login_user_page')
     leave_type = get_object_or_404(LeaveType, id=id)
 
+    # Hidden and Delete is not used
     if status in ['active', 'inactive', 'hidden', 'delete']:
-        if status == 'delete':
-            leave_type.delete()  # Corrected this to actually call delete() method
-        else:
             leave_type.status = status
             leave_type.save()
 
@@ -454,19 +452,49 @@ def leave_detail_view(request):
     }
     return render(request, 'leave_templates/Leave_detail_view.html', context)
 
+@csrf_exempt
+def add_department(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        department_name = data.get('name')
+        if department_name:
+            department = Department.objects.create(name=department_name)
+            return JsonResponse({'status': 'success', 'department_id': department.id})
+        else:
+            return JsonResponse({'status': 'error', 'message': 'Invalid department name'})
+
+# View to add a new designation
+@csrf_exempt
+def add_designation(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        title = data.get('title')
+        department_id = data.get('department_id')
+        if title and department_id:
+            department = Department.objects.get(id=department_id)
+            designation = Designation.objects.create(title=title, department=department)
+            return JsonResponse({'status': 'success', 'designation_id': designation.id})
+        else:
+            return JsonResponse({'status': 'error', 'message': 'Invalid data'})
+
 def EmpList(request):
     if not request.session.get('employee_id'):
         return redirect('Login_user_page')
-    employees = EmployeeBISP.objects.all()
+    employees = EmployeeBISP.objects.filter(status='active').all
     return render(request,'admin_templates/Employee_List.html',{'employees': employees})
 
 #For Delete Employee with ID
 def delete_employee(request, id):
     if not request.session.get('employee_id'):
         return redirect('Login_user_page')
+
     employee = get_object_or_404(EmployeeBISP, id=id)
-    employee.delete()
+
+    # Save current state to history and soft delete
+    employee.soft_delete()
+
     return redirect('Emplist')
+
 
 #For Rendering Register.html Page
 def update_emp_page(request,id):
@@ -484,6 +512,31 @@ def update_employee(request, id):
         return redirect('Login_user_page')
     employee = get_object_or_404(EmployeeBISP, id=id)
     if request.method == 'POST':
+
+        # Before updating the employee, save the previous record to the history table
+        EmployeeBISPHistory.objects.create(
+            employee=employee,
+            name=employee.name,
+            dob=employee.dob,
+            gender=employee.gender,
+            nationality=employee.nationality,
+            permanent_address=employee.permanent_address,
+            current_address=employee.current_address,
+            phone_number=employee.phone_number,
+            email=employee.email,
+            password=employee.password,
+            aadhar_card=employee.aadhar_card,
+            date_of_join=employee.date_of_join,
+            work_location=employee.work_location,
+            designation=employee.designation,
+            department=employee.department,
+            role=employee.role,
+            profile_picture=employee.profile_picture,
+            version=employee.version,
+            timestamp=employee.timestamp,
+
+        )
+
         errors = {}
 
         # Get form data
@@ -505,12 +558,12 @@ def update_employee(request, id):
         department = request.POST.get("Department", '').strip()
         role = request.POST.get("role", '').strip()
 
-        # Validate required fields (same as in register)
+
         # Validate required fields
         required_fields = {
             "Full_Name": name, "PWD": password, "RPWD": confirm_password,
-            "Nationality": nationality, "Per_Address": per_address, "Role": role,
-            "Cur_Address": cur_address, "Aadhar": aadhar, "Phone": phone, "workloc": workloc, "gender": gender
+             "Role": role,
+             "workloc": workloc, "gender": gender
         }
 
         for field, value in required_fields.items():
@@ -539,13 +592,14 @@ def update_employee(request, id):
         if password and password != confirm_password:
             errors["RPWD"] = "Passwords do not match."
 
+
         # Validate Aadhar card number (12 digits)
-        if aadhar and (not aadhar.isdigit() or len(aadhar) != 12):
-            errors["Aadhar"] = "Aadhar number must be exactly 12 digits."
+        # if aadhar and (not aadhar.isdigit() or len(aadhar) != 12):
+        #     errors["Aadhar"] = "Aadhar number must be exactly 12 digits."
 
         # Validate Phone Number (10 digits)
-        if phone and (not phone.isdigit() or len(phone) != 10):
-            errors["Phone"] = "Phone number must be exactly 10 digits."
+        # if phone and (not phone.isdigit() or len(phone) != 10):
+        #     errors["Phone"] = "Phone number must be exactly 10 digits."
 
         # Validate Date of Joining (DOJ)
         if not doj:
@@ -560,18 +614,18 @@ def update_employee(request, id):
                 errors["DOJ"] = "Invalid Date of Joining format. Use YYYY-MM-DD."
 
         # Validate Date of Birth (DOB)
-        if not dob:
-            errors.setdefault("DOB", []).append("DOB is required.")
-        else:
-            try:
-                dob_date = datetime.strptime(dob, "%Y-%m-%d").date()
-                min_dob = datetime(1980, 1, 1).date()  # Set minimum DOB as January 1, 1980
-                if dob_date < min_dob:
-                    errors["DOB"] = "Date of Birth must be on or after January 1, 1980"
-                elif dob_date > datetime.now().date():
-                    errors["DOB"] = "Date of Birth must be less than present date"
-            except ValueError:
-                errors["DOB"] = "Invalid Date of Birth format. Use YYYY-MM-DD."
+        # if not dob:
+        #     errors.setdefault("DOB", []).append("DOB is required.")
+        # else:
+        #     try:
+        #         dob_date = datetime.strptime(dob, "%Y-%m-%d").date()
+        #         min_dob = datetime(1980, 1, 1).date()  # Set minimum DOB as January 1, 1980
+        #         if dob_date < min_dob:
+        #             errors["DOB"] = "Date of Birth must be on or after January 1, 1980"
+        #         elif dob_date > datetime.now().date():
+        #             errors["DOB"] = "Date of Birth must be less than present date"
+        #     except ValueError:
+        #         errors["DOB"] = "Invalid Date of Birth format. Use YYYY-MM-DD."
 
 
         # Validate Department
@@ -603,7 +657,7 @@ def update_employee(request, id):
         # If there are validation errors, return the error response
         if errors:
             return JsonResponse({"status": "error", "errors": errors}, status=400)
-
+        print("DOne")
         # If no errors, update the employee data
         employee.name = name
         employee.email = email
@@ -625,35 +679,47 @@ def update_employee(request, id):
             employee.profile_picture = profile_img
 
         # Save the updated employee data
-        employee.save()
-
-
+        employee.save()  # This will increment the version and update the timestamp
 
         return JsonResponse({"status": "success", "message": "Employee updated successfully!"})
 
     return render(request, 'admin_templates/register.html', {'employee': employee})
 
 
-#Validate Profile  Image
+
+
+# Password validation function
+def validate_password(password):
+    # Check for minimum length
+    if len(password) < 8 or not re.search(r'[A-Z]', password) or not re.search(r'[a-z]', password) or not re.search(r'[0-9]', password) or not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
+        return "Password must be at least 8 characters long, at least one uppercase letter, one lowercase letter,one digit and one special character ."
+
+    return None  # If the password is valid
+
+
+# Validation function for profile image size and extension
 def validate_profile_picture(profile_img):
     if profile_img:
-        # Get file extension
+        # File extension check
         ext = os.path.splitext(profile_img.name)[1].lower()
         allowed_extensions = ['.jpg', '.jpeg', '.png']
-
         if ext not in allowed_extensions:
             return "Profile picture must be a .jpg or .png file."
 
-    return None  # No error
+        # File size check (20 MB max)
+        max_size = 20 * 1024 * 1024  # 20 MB
+        if profile_img.size > max_size:
+            return "Profile picture size must be less than 20 MB."
 
-ALLOWED_DESIGNATIONS = ["Manager", "Developer", "HR", "Accountant"]
-ALLOWED_DEPARTMENT = ["HR", "Marketing", "Sales", "Software"]
-MAX_DESIGNATION_LENGTH = 50
+    return None
+
 
 def register_user(request):
     if not request.session.get('employee_id'):
         return redirect('Login_user_page')
+
     if request.method == "POST":
+        # Retrieve form data
         name = request.POST.get('Full_Name', '').strip()
         email = request.POST.get('Email', '').strip()
         password = request.POST.get('PWD', '').strip()
@@ -677,9 +743,10 @@ def register_user(request):
         # Validate required fields
         required_fields = {
             "Full_Name": name, "PWD": password, "RPWD": confirm_password,
-            "Nationality": nationality,  "Per_Address": per_address, "Role": role,
-            "Cur_Address": cur_address, "Aadhar": aadhar, "Phone": phone, "workloc": workloc, "gender": gender
+             "Role": role,"Cur_Address": cur_address,
+             "workloc": workloc, "gender": gender
         }
+        # "Per_Address": per_address,"Cur_Address": cur_address Add in Profile
 
         for field, value in required_fields.items():
             if not value:
@@ -689,9 +756,9 @@ def register_user(request):
         if name and not re.match(r'^[A-Za-z\s]+$', name):
             errors["Full_Name"] = "Name should contain only letters."
 
-        #Validate Role
+        # Validate Role (check if valid)
         if not role:
-            errors["role"] = f"Role is required"
+            errors["role"] = "Role is required."
 
         # Validate Email
         if not email:
@@ -700,27 +767,30 @@ def register_user(request):
             try:
                 email = email.lower()
                 validate_email(email)
-
-                # Check if email domain is gmail.com or yahoo.com
+                # Check email domain
                 allowed_domains = ['gmail.com', 'yahoo.com']
                 domain = email.split('@')[-1]
                 if domain not in allowed_domains:
-
                     errors.setdefault("Email", []).append("Only Gmail and Yahoo email addresses are allowed.")
             except ValidationError:
                 errors.setdefault("Email", []).append("Invalid email format.")
 
-        # Validate password confirmation
+        # Validate Password Confirmation
         if password != confirm_password:
             errors["RPWD"] = "Passwords do not match."
 
-        # Validate Aadhar card number (12 digits)
-        if aadhar and (not aadhar.isdigit() or len(aadhar) != 12):
-            errors["Aadhar"] = "Aadhar number must be exactly 12 digits."
+        # Validate password strength
+        password_error = validate_password(password)
+        if password_error:
+            errors["PWD"] = password_error
 
-        # Validate Phone Number (10 digits)
-        if phone and (not phone.isdigit() or len(phone) != 10):
-            errors["Phone"] = "Phone number must be exactly 10 digits."
+        # Validate Aadhar
+        # if aadhar and (not aadhar.isdigit() or len(aadhar) != 12):
+        #     errors["Aadhar"] = "Aadhar number must be exactly 12 digits."
+
+        # Validate Phone Number
+        # if phone and (not phone.isdigit() or len(phone) != 10):
+        #     errors["Phone"] = "Phone number must be exactly 10 digits."
 
         # Validate Date of Joining (DOJ)
         if not doj:
@@ -729,50 +799,52 @@ def register_user(request):
             try:
                 today = datetime.today()
                 doj_date = datetime.strptime(doj, "%Y-%m-%d").date()
+                four_months_future = (datetime.today() + timedelta(days=120)).date()
                 if doj_date.year < today.year:
                     errors["DOJ"] = "Date of Joining cannot be from a previous year."
+                elif doj_date > four_months_future:
+                    errors["DOJ"] = "Date of Joining cannot be more than 4 months from today."
             except ValueError:
                 errors["DOJ"] = "Invalid Date of Joining format. Use YYYY-MM-DD."
 
-        # Validate Date of Birth (DOB)
-        if not  dob :
-            errors.setdefault("DOB", []).append("DOB is required.")
-        else:
-            try:
-                dob_date = datetime.strptime(dob, "%Y-%m-%d").date()
-                min_dob = datetime(1980, 1, 1).date()  # Set minimum DOB as January 1, 1980
-                if dob_date < min_dob:
-                    errors["DOB"] = "Date of Birth must be on or after January 1, 1980"
-                elif dob_date > datetime.now().date():
-                    errors["DOB"] = "Date of Birth must be less than present date"
-            except ValueError:
-                errors["DOB"] = "Invalid Date of Birth format. Use YYYY-MM-DD."
+        # Validate Date of Birth (DOB) for profile
+        # if not dob:
+        #     errors.setdefault("DOB", []).append("DOB is required.")
+        # else:
+        #     try:
+        #         dob_date = datetime.strptime(dob, "%Y-%m-%d").date()
+        #         min_dob = datetime(1980, 1, 1).date()
+        #         if dob_date < min_dob:
+        #             errors["DOB"] = "Date of Birth must be on or after January 1, 1980"
+        #         elif dob_date > datetime.now().date():
+        #             errors["DOB"] = "Date of Birth must be less than present date"
+        #     except ValueError:
+        #         errors["DOB"] = "Invalid Date of Birth format. Use YYYY-MM-DD."
 
-        # Validate Department
+        # Validate Department and Designation
         if not department:
-                errors.setdefault("Department", []).append("Department is required.")
+            errors.setdefault("Department", []).append("Department is required.")
         else:
             try:
                 department_obj, created = Department.objects.get_or_create(name=department)
-            except Exception as e:
-                errors["Department"] = f"{department} have no {designation}"
+            except Exception:
+                errors["Department"] = f"{department} does not exist."
 
-        # Validate Designation
         if not designation:
-                errors.setdefault("Designation", []).append("Designation is required.")
+            errors.setdefault("Designation", []).append("Designation is required.")
         else:
-                # Only proceed with DB interaction if input is valid
             try:
                 designation_obj, created = Designation.objects.get_or_create(title=designation,
-                                                                                 department=department_obj)
-            except Exception as e:
-                errors["Designation"] = f"{department} has no designation titled '{designation}'."
+                                                                             department=department_obj)
+            except Exception:
+                errors["Designation"] = f"Designation '{designation}' does not exist in department '{department}'."
 
-        # Validate profile image format
+        # Validate profile picture format and size
         error_message = validate_profile_picture(profile_img)
         if error_message:
             errors["image"] = error_message
 
+        # Return errors if any
         if errors:
             return JsonResponse({"status": "error", "errors": errors}, status=400)
 
@@ -803,7 +875,6 @@ def register_user(request):
         return JsonResponse({"status": "success", "message": "Employee registered successfully!"})
 
     return render(request, 'admin_templates/register.html')
-
 
 def show_login_page(request):
     # Check if session already active
@@ -946,7 +1017,8 @@ def leave_Add_page(request):
         # Assigned leave types
         emp_leaves = EmpLeaveType.objects.select_related('leave_type').filter(
             employee=employee,
-            leave_type__status='active'
+            leave_type__status='active',
+
         )
 
         for e in emp_leaves:
@@ -1013,10 +1085,9 @@ def Apply_leave(request):
         else:
             try:
                 leave_obj = LeaveType.objects.get(name=leavetype)
-                if leave_obj.status == 'inactive':
-                    errors['Status'] = f"{leave_obj.name} leave is not active"
             except LeaveType.DoesNotExist:
                 errors["leavetype"] = "Invalid leave type selected."
+
 
         from_date, till_date = None, None
         if not fromdate or not tilldate:
@@ -1061,6 +1132,7 @@ def Apply_leave(request):
                     if not is_sunday and not is_holiday:
                         if choice in ["first_half", "second_half"]:
                             leave_days += 0.5
+                            half_day_name=choice
                             half_day_choices[str(date)] = choice
                         else:
                             leave_days += 1
@@ -1191,6 +1263,8 @@ def add_leave_type(request):
         return redirect('Login_user_page')
 
     if request.method == 'POST':
+
+
         errors = {}
 
         # Basic info
@@ -1351,6 +1425,29 @@ def update_leave_type(request, leave_type_id):
 
     if request.method == 'POST':
         errors = {}
+        # Save previous state to LeaveTypeHistory
+        LeaveTypeHistory.objects.create(
+            leave_type=leave_type,
+            name=leave_type.name,
+            code=leave_type.code,
+            accrual=leave_type.accrual,
+            effective_after=leave_type.effective_after,
+            effective_after_value=leave_type.effective_after_value,
+            effective_from=leave_type.effective_from,
+            status=leave_type.status,
+            leave_time=leave_type.leave_time,
+            leave_time_unit=leave_type.leave_time_unit,
+            leave_type_field=leave_type.leave_type,
+            count_weekends_as_leave=leave_type.count_weekends_as_leave,
+            count_holidays_as_leave=leave_type.count_holidays_as_leave,
+            leave_frequency=leave_type.leave_frequency,
+            gender=leave_type.gender,
+            marital_status=leave_type.marital_status,
+            department=leave_type.department,
+            version=leave_type.version,
+            timestamp=leave_type.timestamp,
+        )
+        leave_type.version += 1  # Increment version
 
         # Basic info
         leave_name = request.POST.get('leave_name')

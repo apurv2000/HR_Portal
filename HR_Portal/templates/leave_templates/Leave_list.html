@@ -58,10 +58,10 @@
                       <th>Leave Days</th>
                       <th>Reason</th>
                       <th>Status</th>
-                      <th>Action By</th>
+                      <th>Apply Date</th>
                       <th>Start Date</th>
                       <th>End Date</th>
-                      <th >Actions</th>
+                      <th>Action By</th>
                     </tr>
 
 
@@ -73,45 +73,50 @@
                       <td>{{ leave.leave_type.name }}</td>
                       <td>{{ leave.leave_days  }}</td>
                       <td>{{ leave.reason }}</td>
-                      <td class="text-center">
-                        <div class="d-flex flex-column align-items-center gap-1">
-                          <span class="badge
-                            {% if leave.status == 'Pending' %} bg-warning text-dark
-                            {% elif leave.status == 'Approved' %} bg-success
-                            {% elif leave.status == 'Rejected' %} bg-danger
-                            {% else %} bg-secondary
-                            {% endif %}
-                          ">
-                            {{ leave.status }}
-                          </span>
-
-                          {% if leave.status == 'Rejected' and leave.reject_reason %}
-                            <button class="btn btn-sm btn-outline-danger" onclick="showRejectReason('{{ leave.reject_reason|escapejs }}')">
-                              Reason
-                            </button>
+                     <td class="text-center">
+                      <div class="dropdown">
+                        <button class="btn btn-sm dropdown-toggle
+                          {% if leave.status == 'Pending' %} bg-warning text-dark
+                          {% elif leave.status == 'Approved' %} bg-success
+                          {% elif leave.status == 'Rejected' %} bg-danger
+                          {% else %} bg-secondary
                           {% endif %}
-                        </div>
-                      </td>
-                    <td>
+                        " type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                          {{ leave.status }}
+                        </button>
+
+                        <ul class="dropdown-menu">
+                          {% if leave.status != 'Withdrawn' %}
+                            <li>
+                              <a class="dropdown-item text-danger" href="{% url 'withdraw_leave' leave.id %}" onclick="return confirm('Are you sure you want to withdraw this leave?');">
+                                <i class="fas fa-user-slash"></i>  Withdraw
+                              </a>
+                            </li>
+                          {% else %}
+                            <li>
+                              <span class="dropdown-item text-muted">Already Withdrawn</span>
+                            </li>
+                          {% endif %}
+                        </ul>
+                      </div>
+
+                      {% if leave.status == 'Rejected' and leave.reject_reason %}
+                        <button class="btn btn-sm btn-outline-danger mt-1" onclick="showRejectReason('{{ leave.reject_reason|escapejs }}')">
+                          Reason
+                        </button>
+                      {% endif %}
+                    </td>
+
+                      <td>{{leave.apply_date}}</td>
+                      <td>{{ leave.start_date }}</td>
+                      <td>{{ leave.end_date }}</td>
+                      <td>
                             {% if leave.approved_by %}
                                 {{ leave.approved_by.name }}
                             {% else %}
 
                             {% endif %}
                         </td>
-
-                      <td>{{ leave.start_date }}</td>
-                      <td>{{ leave.end_date }}</td>
-                      <td>
-                        {% if leave.status != 'Withdrawn' %}
-                        <div class="d-flex gap-3">
-                          <a href="{% url 'withdraw_leave' leave.id %}" class="btn btn-danger btn-sm"
-                             onclick="return confirm('Are you sure you want to withdraw this leave?');">
-                            <i class="fas fa-user-slash"></i> Withdraw
-                          </a>
-                        </div>
-                        {% endif %}
-                      </td>
                     </tr>
                   {% empty %}
                     <tr>
@@ -136,13 +141,6 @@
   </div>
   <!-- /.content-wrapper -->
 
-  <!-- Footer -->
-  <footer class="main-footer">
-    <div class="float-right d-none d-sm-block">
-      <b>Version</b> 3.1.0
-    </div>
-    <strong>Copyright &copy; 2014-2021 <a href="https://adminlte.io">AdminLTE.io</a>.</strong> All rights reserved.
-  </footer>
 
 </div>
 <!-- ./wrapper -->

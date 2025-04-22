@@ -40,7 +40,11 @@ INSTALLED_APPS = [
     'HR_App',
     'Project',
     'Timesheet',
+    'Chatbox',
 ]
+
+
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

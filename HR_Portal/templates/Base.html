@@ -311,37 +311,6 @@
 </script>
 
 
-<!--Script for Team member dropdown in Project Add-->
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const checkboxes = document.querySelectorAll('.team-member-option');
-    const button = document.getElementById('teamMembersBtn');
-    const hiddenInput = document.getElementById('team_members');
-
-    function updateSelected() {
-        let selectedLabels = [];
-        let selectedIds = [];
-
-        checkboxes.forEach(cb => {
-            if (cb.checked) {
-                selectedLabels.push(cb.getAttribute('data-label'));
-                selectedIds.push(cb.value);
-            }
-        });
-
-        button.textContent = selectedLabels.length > 0 ? selectedLabels.join(', ') : 'Select team members';
-        hiddenInput.value = selectedIds.join(',');
-    }
-
-    checkboxes.forEach(cb => {
-        cb.addEventListener('change', updateSelected);
-    });
-
-    // Initialize on page load (in case of preselected options)
-    updateSelected();
-});
-</script>
-
 <!--Script for render errors and success message on Timesheet page-->
 <script>
 document.getElementById("form").addEventListener("submit", function (e) {
@@ -406,69 +375,6 @@ document.getElementById("form").addEventListener("submit", function (e) {
   }
 </script>
 
-<!--Error Message for Task Add-->
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  const form = document.getElementById('taskForm');
-
-  // Remove error message on input, select, or textarea change
-  form.querySelectorAll('input, select, textarea').forEach(input => {
-    input.addEventListener('input', () => {
-      const errorDiv = document.getElementById(`error-${input.name}`);
-      if (errorDiv) {
-        errorDiv.innerHTML = '';
-      }
-    });
-  });
-
-  // Handle form submit
-  form.addEventListener('submit', function(e) {
-    e.preventDefault();
-
-    const formData = new FormData(form);
-
-    // Clear previous errors and success message
-    document.querySelectorAll('.text-danger').forEach(div => div.innerHTML = '');
-    const successDiv = document.getElementById('form-success');
-    successDiv.classList.add('d-none');
-    successDiv.innerHTML = '';
-
-    fetch("{% url 'Project:add_task' %}", {
-      method: 'POST',
-      headers: {
-        'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
-      },
-      body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.status === 'error') {
-        for (const field in data.errors) {
-          const errorDiv = document.getElementById(`error-${field}`);
-          if (errorDiv) {
-            errorDiv.innerHTML = data.errors[field];
-          }
-        }
-      } else {
-        successDiv.innerHTML = `
-          ${data.message}
-          <button type="button" class="btn-close float-end" aria-label="Close" onclick="this.parentElement.classList.add('d-none')"></button>
-        `;
-        successDiv.classList.remove('d-none');
-        form.reset();
-
-        // Auto-hide after 2 seconds
-        setTimeout(() => {
-          successDiv.classList.add('d-none');
-        }, 2000);
-      }
-    })
-    .catch(error => {
-      console.error('Error:', error);
-    });
-  });
-});
-</script>
 
 
 <!--For TaskTable Datatable in Task List-->
