@@ -232,7 +232,7 @@ class Leave(models.Model):
     #New Field: File Attachment for supporting documents (optional)
     attachment = models.FileField(upload_to="leave_attachments/", blank=True, null=True)
     leave_days = models.FloatField(default=1.0)  # Store 0.5, 1.0, 2.0, etc.
-    half_day_type_name=models.CharField(max_length=20,null=True)
+    half_day_type_name=models.CharField(max_length=250,null=True)
     created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:

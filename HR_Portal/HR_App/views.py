@@ -225,7 +225,7 @@ def Leave_list_approved(request):
         return redirect('Login_user_page')
 
     # Get all leaves from all employees, ordered by apply_date and then ID (newest first)
-    leave_queryset = Leave.objects.order_by('created_at')  # Most recent application first
+    leave_queryset = Leave.objects.order_by('-created_at','-id')  # Most recent application first
 
     return render(request, 'leave_templates/Leave_list_approved.html', {'leave_queryset': leave_queryset})
 #ID -12
@@ -713,7 +713,7 @@ def validate_profile_picture(profile_img):
 
     return None
 
-
+#Add new Employee
 def register_user(request):
     if not request.session.get('employee_id'):
         return redirect('Login_user_page')
@@ -994,14 +994,21 @@ def leave_Add_page(request):
 
     emp_leave_list = []
 
+    from datetime import datetime, timedelta, date
+
     if employee:
+        joining_date = employee.date_of_join
+
+        # If joining_date is a string, convert it to a date object
+        if isinstance(joining_date, str):
+            joining_date = datetime.strptime(joining_date, '%Y-%m-%d').date()
+
         today = date.today()
 
         def is_effective(leave_type):
             if leave_type.effective_after is None:
                 return True
 
-            # Calculate effective date using approximate days
             if leave_type.effective_after_value == 'Year':
                 days_to_add = leave_type.effective_after * 365
             elif leave_type.effective_after_value == 'Month':
@@ -1011,8 +1018,8 @@ def leave_Add_page(request):
             else:
                 return True  # fallback
 
-            effective_date = today + timedelta(days=days_to_add)
-            return date.today() >= effective_date
+            effective_date = joining_date + timedelta(days=days_to_add)
+            return today >= effective_date
 
         # Assigned leave types
         emp_leaves = EmpLeaveType.objects.select_related('leave_type').filter(
@@ -1113,6 +1120,7 @@ def Apply_leave(request):
         if leave_obj:
             leave_days = 0
             half_day_choices = {}
+            half_day_name_parts = []  # Collect half-day descriptions
 
             if from_date and till_date:
                 dates = []
@@ -1132,8 +1140,11 @@ def Apply_leave(request):
                     if not is_sunday and not is_holiday:
                         if choice in ["first_half", "second_half"]:
                             leave_days += 0.5
-                            half_day_name=choice
                             half_day_choices[str(date)] = choice
+                            day_name = date.strftime("%A")
+                            formatted_half = choice.replace('_', ' ').title()  # "First Half"
+                            half_day_name_parts.append(f"{formatted_half} on {day_name} ({date})")
+
                         else:
                             leave_days += 1
 
@@ -1151,6 +1162,8 @@ def Apply_leave(request):
 
                 print(f"Total leave days: {leave_days}")
                 print("Half-day details:", half_day_choices)
+
+            half_day_name = ", ".join(half_day_name_parts)
 
             # After leave_obj is fetched and validated
             emp_leave = EmpLeaveType.objects.filter(employee=employee, leave_type=leave_obj).first()
@@ -1199,7 +1212,7 @@ def Apply_leave(request):
         })
 
 
-    return render(request, "leave_templates/leave_add.html",{"errors": errors})
+    return render(request, "leave_templates/leave_add.html",{"errors": errors,})
 
 
 

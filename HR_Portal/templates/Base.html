@@ -37,7 +37,13 @@
   <!-- Statistics -->
   <link rel="stylesheet" href="{% static 'css/statistics.css' %}">
 
-
+  <!--Style for Highlight selected row for half day leave info-->
+   <style>
+  .highlight-row {
+    background-color: #e0f7fa !important; /* Light teal blue */
+    transition: background-color 0.3s ease;
+  }
+  </style>
 
     <!--Style for Timesheet.html-->
    <style>
@@ -285,6 +291,33 @@
 <script src="{% static 'plugins/datatables-buttons/js/buttons.colVis.min.js' %}"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js" integrity="sha384-k6d4wzSIapyDyv1kpU366/PK5hCdSbCRGRCMv+eplOQJWyd1fbcAu9OCUj5zNLiq" crossorigin="anonymous"></script>
+
+
+
+<!--For Half Day leave info highlight select row -->
+<script>
+  function highlightRow(rowId) {
+    // Remove highlight from any previously highlighted row
+    document.querySelectorAll('tr.table-active').forEach(row => {
+      row.classList.remove('table-active');
+    });
+
+    // Add highlight to the current row
+    const row = document.getElementById(rowId);
+    if (row) {
+       row.classList.add('highlight-row');
+    }
+  }
+
+  // Remove highlight when modal is closed
+  document.querySelectorAll('.modal').forEach(modal => {
+    modal.addEventListener('hidden.bs.modal', () => {
+         document.querySelectorAll('tr.highlight-row').forEach(row => {
+        row.classList.remove('highlight-row');
+      });
+    });
+  });
+</script>
 
 <!--Script for render Task according to Project in Timesheet-->
 <script>
