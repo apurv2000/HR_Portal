@@ -31,11 +31,80 @@
             font-weight: 600;
         }
 
+    .chatbox-container {
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 0;
+    margin: 0;
+}
+
+.chatbox-message {
+    background-color: #f1f1f1;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 10px;
+    position: relative;
+    max-width: 75%;
+    word-wrap: break-word;
+}
+
+.chatbox-message-header {
+    font-weight: bold;
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+
+.chatbox-message-body {
+    font-size: 14px;
+    color: #333;
+}
+
+.chatbox-actions {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+}
+
+.chatbox-message.pending {
+    background-color: #f9e8e8;  /* Light red for pending */
+}
+
+.chatbox-message.approved {
+    background-color: #e8f9e8;  /* Light green for approved */
+}
+
+.chatbox-message.rejected {
+    background-color: #f8e8e8;  /* Light gray for rejected */
+}
+
+.chatbox-message .btn {
+    font-size: 12px;
+    padding: 5px 10px;
+}
+
+.chatbox-message .modal-content {
+    font-size: 14px;
+}
+
+.text-muted {
+    font-size: 12px;
+    color: #6c757d !important;
+}
+
+.text-muted small {
+    font-size: 10px;
+}
+
+hr {
+    border-top: 1px solid #ccc;
+}
+
 </style>
 
 <div class="container-fluid mt-4">
     <div class="row align-items-stretch">
         <!-- Task Statistics -->
+        {% if request.session.role != 'Administrator'%}
         <div class="col-md-4 mb-4 d-flex">
             <div class="card p-3 h-100 w-100">
                 <h5>Task Statistics</h5>
@@ -73,12 +142,118 @@
                 </ul>
             </div>
         </div>
+        {% endif %}
+        {% if request.session.role == 'Administrator' %}
+          <!-- Employee's Leave Application -->
+          <div class="col-md-4 mb-4 d-flex">
+            <div class="card p-3 h-100 w-100">
+              <h5>Leave Request</h5>
+              <hr>
+
+              {% if employee_leaves %}
+                <div class="chatbox-container" style="width: 500px;">
+                  {% for leave in employee_leaves %}
+                    <div class="chatbox-message mb-3 {% if leave.status == 'Pending' %} pending {% elif leave.status == 'Approved' %} approved {% elif leave.status == 'Rejected' %} rejected {% endif %}">
+
+                      <!-- Flex layout for leave details (left side) and actions (right side) -->
+                      <div class="d-flex align-items-center">
+
+                        <!-- Employee Info and Leave Dates (Left Side) -->
+                        <div class="me-3" style="flex: 1;">
+                          <strong>{{ leave.employee.name }}</strong>
+                          <small class="text-muted">({{ leave.employee.designation.title }}, {{ leave.employee.department.name }})</small><br>
+                          <strong>{{ leave.leave_type.name }}</strong>: {{ leave.start_date }} to {{ leave.end_date }} <br>
+                          <span class="text-muted">Reason:</span> {{ leave.reason|truncatechars:50 }}<br>
+                          {% if leave.approved_by.name %}
+                          <span class="text-muted">Approved By:</span> {{ leave.approved_by.name |truncatechars:50 }}
+                          {% endif %}
+                        </div>
+                        <!-- Action Taken and Status Dropdown (Right Side) -->
+                              <form method="POST" action="{% url 'update_leave_status_dashboard' leave.id %}" id="status-form-{{ leave.id }}">
+                                      {% csrf_token %}
+                                     <div class="dropdown">
+                                      <button class="btn btn-sm dropdown-toggle dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                                        {% if leave.status == 'Approved' %}
+                                          style="background-color: green; color: white;"
+                                        {% elif leave.status == 'Rejected' %}
+                                          style="background-color: red; color: white;"
+                                        {% elif leave.status == 'Withdrawn' %}
+                                          style="background-color: grey; color: white;"
+                                        {% else %}
+                                          style="background-color: yellow; color: black;"
+                                        {% endif %}>
+                                        {{ leave.status }}
+                                      </button>
+
+                                      {% if leave.status != 'Rejected' %}
+                                        <ul class="dropdown-menu">
+                                          {% if leave.status != 'Withdrawn' %}
+                                            {% if leave.status != 'Approved' %}
+                                              <li>
+                                                <a class="dropdown-item text-success" href="#" onclick="submitStatusForm('{{ leave.id }}', 'Approved')">Approve</a>
+                                              </li>
+                                            {% endif %}
+                                            {% if leave.status != 'Rejected' %}
+                                              <li>
+                                                <a class="dropdown-item text-danger" href="#" onclick="showRejectBox('{{ leave.id }}')">Reject</a>
+                                              </li>
+                                            {% endif %}
+                                          {% else %}
+                                            <li>
+                                              <span class="dropdown-item text-muted" style="background-color: #f8f9fa; pointer-events: none;">Approve</span>
+                                            </li>
+                                            <li>
+                                              <span class="dropdown-item text-muted" style="background-color: #f8f9fa; pointer-events: none;">Reject</span>
+                                            </li>
+                                          {% endif %}
+                                        </ul>
+                                      {% endif %}
+                                    </div>
+                                      <input type="hidden" name="status" id="status-input-{{ leave.id }}">
+                                      <div class="reject-box mt-2" id="reject-box-{{ leave.id }}" style="display: none;">
+                                        <textarea class="form-control mb-1" name="rejection_reason" rows="2" placeholder="Reason for rejection" required></textarea>
+                                        <button type="submit" name="status" value="Rejected" class="btn btn-sm btn-danger">Submit Rejection</button>
+                                      </div>
+                               </form>
+                        </div>
+                      </div>
+                  {% endfor %}
+                </div>
+              {% else %}
+                <p class="text-muted small mb-0">No leave records found.</p>
+              {% endif %}
+                <!-- Horizontal Line -->
+                <hr class="mt-auto">
+                  <div class="text-center mt-2">
+                        <a href="{% url 'LeavelistApproved' %}">View all</a>
+                 </div>
+            </div>
+          </div>
+
+        {% endif %}
 
         <!-- Latest Activity -->
         <div class="col-md-4 mb-4 d-flex">
             <div class="card p-3 h-100 w-100">
                 <h5>Latest Activity</h5>
+                <hr>
+        {% if latest_tasks %}
+                {% for task in latest_tasks %}
+                <div class="d-flex justify-content-between align-items-center bg-light p-2 rounded mb-2">
+              <div>
+                <i class="bi bi-clipboard-data text-primary"></i>
+                <strong class="ms-2">{{ task.task_title }}</strong>
+              </div>
+              <span class="badge bg-warning">{{task.status }}</span>
+            </div>
+                {% endfor %}
 
+        {% endif %}
+                <!-- Horizontal Line -->
+                <hr class="mt-auto">
+                  <div class="text-center mt-2">
+                        <a href="{% url 'Project:project_list' %}">View all </a>
+                 </div>
             </div>
         </div>
             <!-- Recent Projects -->
@@ -100,7 +275,7 @@
                                     <td>{{ project.rate_status }}</td>
                                     {% if project.project_name != None %}
                                     <td class="text-center">
-                                         <a href="{% url 'Project:project_detail' project.id %}"><i class="fas fa-ellipsis-v text-muted" style="cursor:pointer;"></i></a>
+                                         <a href="{% url 'Project:project_detail' project.id %}"><i class="fas fa-ellipsis-v text-primary" style="cursor:pointer;"></i></a>
                                     </td>
                                     {% endif %}
                                 </tr>
@@ -117,7 +292,7 @@
 
                     <!-- View all projects link fixed at the bottom -->
                     <div class="text-center mt-2">
-                        <a href="{% url 'Project:project_list' %}">View all projects</a>
+                        <a href="{% url 'Project:project_list' %}">View all </a>
                     </div>
                 </div>
             </div>
@@ -126,5 +301,20 @@
         </div>
     </div>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+  // Show reject box when 'Reject' is clicked
+  function showRejectBox(leaveId) {
+    document.getElementById('reject-box-' + leaveId).style.display = 'block';
+  }
+
+  // Submit form with selected status
+  function submitStatusForm(leaveId, status) {
+    document.getElementById('status-input-' + leaveId).value = status;
+    document.getElementById('status-form-' + leaveId).submit();
+  }
+</script>
+
 
 {% endblock %}

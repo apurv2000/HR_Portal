@@ -101,9 +101,12 @@
                       </div>
 
                       {% if leave.status == 'Rejected' and leave.reject_reason %}
-                        <button class="btn btn-sm btn-outline-danger mt-1" onclick="showRejectReason('{{ leave.reject_reason|escapejs }}')">
-                          Reason
-                        </button>
+                          <a href="#"
+                                   data-bs-toggle="tooltip"
+                                   title="{{ leave.reject_reason }}"
+                                   data-bs-placement="left">
+                                   Reason
+                           </a>
                       {% endif %}
                     </td>
 

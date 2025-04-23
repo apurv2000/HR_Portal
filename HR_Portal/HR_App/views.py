@@ -9,7 +9,7 @@ from django.core.files.storage import FileSystemStorage
 from django.core.mail import send_mail
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Sum
 from django.shortcuts import render, redirect, get_object_or_404
 import json
 from django.http import JsonResponse, HttpResponse
@@ -64,6 +64,25 @@ def Manager(request):
     for status, count in status_counts.items():
         status_percentages[status] = round((count / total_tasks) * 100, 2) if total_tasks else 0
 
+    # Leave Summary for each leave type
+    emp_leave_types = EmpLeaveType.objects.filter(employee=employee,leave_type__status = 'active')
+    leave_summary = [
+        {
+            'leave_type': elt.leave_type.name,
+            'total': elt.total_leave,
+            'availed': elt.availed_leave,
+            'remaining': elt.remaining_leave,
+        }
+        for elt in emp_leave_types
+    ]
+
+    # Aggregated leave totals
+    aggregated_leave = emp_leave_types.aggregate(
+        total_leave_sum=Sum('total_leave'),
+        remaining_leave_sum=Sum('remaining_leave'),
+        availed_leave_sum=Sum('availed_leave')
+    )
+
     context = {
         'total_projects': project_qs.count(),
         'total_tasks': task_qs.count(),
@@ -73,6 +92,7 @@ def Manager(request):
         'status_counts': status_counts,
         'overdue_tasks': overdue_tasks,
         'status_percentages': status_percentages,
+        'leave_totals': aggregated_leave,
 
     }
 
@@ -91,6 +111,9 @@ def Hr(request):
 
     # Get all projects where the employee is admin or leader
     project_qs = Project.objects.filter(admin=employee) | Project.objects.filter(leader=employee)
+
+    #All Employee leave
+    employee_leaves = Leave.objects.all().order_by('-created_at')[:5]
 
     # Get related tasks from those projects
     task_qs = Task.objects.filter(assigned_to=employee)
@@ -114,6 +137,25 @@ def Hr(request):
     for status, count in status_counts.items():
         status_percentages[status] = round((count / total_tasks) * 100, 2) if total_tasks else 0
 
+    # Leave Summary for each leave type
+    emp_leave_types = EmpLeaveType.objects.filter(employee=employee,leave_type__status = 'active')
+    leave_summary = [
+        {
+            'leave_type': elt.leave_type.name,
+            'total': elt.total_leave,
+            'availed': elt.availed_leave,
+            'remaining': elt.remaining_leave,
+        }
+        for elt in emp_leave_types
+    ]
+
+    # Aggregated leave totals
+    aggregated_leave = emp_leave_types.aggregate(
+        total_leave_sum=Sum('total_leave'),
+        remaining_leave_sum=Sum('remaining_leave'),
+        availed_leave_sum=Sum('availed_leave')
+    )
+
     context = {
         'total_projects': project_qs.count(),
         'total_tasks': task_qs.count(),
@@ -123,6 +165,8 @@ def Hr(request):
         'status_counts': status_counts,
         'overdue_tasks': overdue_tasks,
         'status_percentages': status_percentages,
+        'leave_totals': aggregated_leave,
+        'employee_leaves': employee_leaves,
 
     }
 
@@ -147,11 +191,31 @@ def Employee(request):
     total_tasks = task_qs.count()
     status_labels = ['Pending', 'Inprogress', 'Claimed Completed', 'Completed', 'On Hold']
     status_counts = {label: task_qs.filter(status=label).count() for label in status_labels}
+    latest_tasks = Task.objects.select_related('assigned_to').order_by('-created_at')[:5]#pending
 
     # Calculate percentage for each status
     status_percentages = {}
     for status, count in status_counts.items():
         status_percentages[status] = round((count / total_tasks) * 100, 2) if total_tasks else 0
+
+        # Leave Summary for each leave type
+    emp_leave_types = EmpLeaveType.objects.filter(employee=employee,leave_type__status = 'active' )
+    leave_summary = [
+        {
+            'leave_type': elt.leave_type.name,
+            'total': elt.total_leave,
+            'availed': elt.availed_leave,
+            'remaining': elt.remaining_leave,
+        }
+        for elt in emp_leave_types
+    ]
+
+    # Aggregated leave totals
+    aggregated_leave = emp_leave_types.aggregate(
+        total_leave_sum=Sum('total_leave'),
+        remaining_leave_sum=Sum('remaining_leave'),
+        availed_leave_sum=Sum('availed_leave')
+    )
 
     # Count tasks by status using simple logic
     status_counts = {
@@ -172,6 +236,8 @@ def Employee(request):
         'status_counts': status_counts,
         'overdue_tasks': overdue_tasks,
         'status_percentages': status_percentages,
+        'leave_totals': aggregated_leave,
+        'latest_tasks':latest_tasks
 
     }
 
@@ -280,7 +346,7 @@ def update_leave_approve(request, leave_id):
 
     employee_id = request.session.get('employee_id')
     try:
-        employee = EmployeeBISP.objects.get(id=employee_id)
+        employeeC = EmployeeBISP.objects.get(id=employee_id)
     except EmployeeBISP.DoesNotExist:
         employee=None
 
@@ -296,7 +362,7 @@ def update_leave_approve(request, leave_id):
 
         # Update the leave status
         leave.status = status
-        leave.approved_by=employee
+        leave.approved_by=employeeC
 
 
         # Handle rejection reason if the status is 'Rejected'
@@ -333,6 +399,68 @@ def update_leave_approve(request, leave_id):
 
         # Redirect after the update
         return redirect('LeavelistApproved')
+
+    # In case of GET or invalid status, return to leave list or a relevant page
+    return redirect('LeavelistApproved')
+
+#For Administrator Leave Request Approval
+def update_leave_approve_dashboard(request, leave_id):
+    if not request.session.get('employee_id'):
+        return redirect('Login_user_page')
+
+    employee_id = request.session.get('employee_id')
+    try:
+        employeeC = EmployeeBISP.objects.get(id=employee_id)
+    except EmployeeBISP.DoesNotExist:
+        employee=None
+
+    leave = get_object_or_404(Leave, id=leave_id)
+    employee = leave.employee  # Get the employee related to this leave
+    leave_days = leave.leave_days  # Get the number of days the leave spans
+    leave_type = leave.leave_type  # Get the leave type related to this leave
+    leave_type_instance = get_object_or_404(LeaveType, name=leave_type)  # Fetch the leave type instance
+
+    if request.method == 'POST':
+        status = request.POST.get('status')
+        rejection_reason = request.POST.get('rejection_reason', None)
+
+        # Update the leave status
+        leave.status = status
+        leave.approved_by=employeeC
+
+
+        # Handle rejection reason if the status is 'Rejected'
+        if status == 'Rejected' and rejection_reason:
+            # Revert leave balance in EmpLeaveType model if rejected
+            emp_leave_type_instance = EmpLeaveType.objects.get(employee=employee, leave_type=leave_type_instance)
+
+            emp_leave_type_instance.remaining_leave = min(emp_leave_type_instance.total_leave,
+                                                          emp_leave_type_instance.remaining_leave + leave_days)
+            emp_leave_type_instance.availed_leave = max(0, emp_leave_type_instance.availed_leave - leave_days)
+            emp_leave_type_instance.save()
+
+            leave.reject_reason = rejection_reason
+            leave.reject_date = timezone.now()
+
+        # Handle when leave is approved
+        elif status == 'Approved':
+            if leave.start_date >= timezone.now().date():# Ensure the leave date is in the future or today
+                if leave.compensatory_off == 0 :
+                    emp_leave_type_instance = EmpLeaveType.objects.get(employee=employee,
+                                                                       leave_type=leave_type_instance)
+                    emp_leave_type_instance.availed_leave = max(0, emp_leave_type_instance.availed_leave + leave_days)
+                    emp_leave_type_instance.remaining_leave = max(0,
+                                                                  emp_leave_type_instance.remaining_leave - leave_days)
+                    emp_leave_type_instance.save()
+                elif leave.compensatory_off == 1:
+                    pass
+
+        # Save the updated leave record
+        leave.save()
+
+
+        # Redirect after the update
+        return redirect('Hrpanel')
 
     # In case of GET or invalid status, return to leave list or a relevant page
     return redirect('LeavelistApproved')

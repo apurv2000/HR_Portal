@@ -240,6 +240,7 @@
 
 {% endblock %}
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js" integrity="sha384-k6d4wzSIapyDyv1kpU366/PK5hCdSbCRGRCMv+eplOQJWyd1fbcAu9OCUj5zNLiq" crossorigin="anonymous"></script>
 <!-- jQuery -->
 <script src="{% static 'plugins/jquery/jquery.min.js' %}"></script>
 <!-- jQuery UI 1.11.4 -->
@@ -290,8 +291,28 @@
 <script src="{% static 'plugins/bs-custom-file-input/bs-custom-file-input.min.js' %}"></script>
 <script src="{% static 'plugins/datatables-buttons/js/buttons.colVis.min.js' %}"></script>
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js" integrity="sha384-k6d4wzSIapyDyv1kpU366/PK5hCdSbCRGRCMv+eplOQJWyd1fbcAu9OCUj5zNLiq" crossorigin="anonymous"></script>
 
+
+<!--Script of Tooltip for rejection reason-->
+<script>
+  // Function to initialize tooltips across the page
+  function initializeTooltips() {
+    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+
+    if (tooltipTriggerList.length > 0) {
+      tooltipTriggerList.forEach((tooltipTriggerEl) => {
+        try {
+          new bootstrap.Tooltip(tooltipTriggerEl);
+        } catch (error) {
+          console.error('Tooltip initialization failed for:', tooltipTriggerEl, error);
+        }
+      });
+    }
+  }
+
+  // Ensure the DOM is fully loaded before initializing
+  document.addEventListener('DOMContentLoaded', initializeTooltips);
+</script>
 
 
 <!--For Half Day leave info highlight select row -->
@@ -400,6 +421,7 @@ document.getElementById("form").addEventListener("submit", function (e) {
     document.getElementById("remainleave").value = remaining || '';
   }
 </script>
+
 <!-- Script to Handle Active Option in task detail dropdown-->
 <script>
   function submitStatus(status) {
@@ -435,6 +457,7 @@ document.getElementById("form").addEventListener("submit", function (e) {
     });
   });
 </script>
+
 <!--For Project Add Validation -->
 <script>
 $(document).ready(function () {
@@ -499,16 +522,7 @@ $(document).ready(function () {
 </script>
 
 
-<!--For Rejection reason -->
-<script>
-  function showRejectReason(reason) {
-    if (reason) {
-      alert(reason);
-    } else {
-      alert("No rejection reason provided.");
-    }
-  }
-</script>
+
 
 <!--For Leave list Approved for status -->
 <script>
@@ -554,6 +568,7 @@ $(document).ready(function () {
     });
   });
 </script>
+
 <!-- JavaScript to toggle visibility for leave details toggles-->
 <script>
 function toggleCollapse(elementId) {

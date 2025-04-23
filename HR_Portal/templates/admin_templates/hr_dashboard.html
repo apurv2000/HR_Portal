@@ -46,15 +46,8 @@
 
               <div class="info-box-content">
                 <span class="info-box-text">Remaining Leave</span>
-                <span class="info-box-number">{{ remaining_leave}}</span>
+                <span class="info-box-number">{{leave_totals.remaining_leave_sum}}</span>
 
-                <!-- Remaining Leave -->
-                <div class="progress">
-                  <div class="progress-bar bg-success" style="width: {{ remaining_percentage }}%"></div>
-                </div>
-                <span class="progress-description">
-                  {{ remaining_percentage }}% Remaining Leave
-                </span>
               </div>
               <!-- /.info-box-content -->
             </div>
@@ -67,15 +60,8 @@
 
               <div class="info-box-content">
                 <span class="info-box-text">Total Leave</span>
-                <span class="info-box-number">{{ total_leave }}</span>
+                <span class="info-box-number">{{leave_totals.total_leave_sum }}</span>
 
-               <!-- Total Leave (Always 100%) -->
-                  <div class="progress">
-                    <div class="progress-bar bg-info" style="width: {{ total_percentage }}%"></div>
-                  </div>
-                  <span class="progress-description">
-                    {{ total_percentage }}% Total Leave Capacity
-                  </span>
               </div>
               <!-- /.info-box-content -->
             </div>
@@ -85,33 +71,21 @@
                 <div class="col-md-3 col-sm-6 col-12">
             <div class="info-box bg-gradient-dark">
               <span class="info-box-icon"><i class="far fa-calendar-alt"></i></span>
-
               <div class="info-box-content">
                 <span class="info-box-text">Availed Leave</span>
-                <span class="info-box-number"></span>
-
-               <!-- Availed Leave -->
-                  <div class="progress">
-                    <div class="progress-bar bg-warning" style="width: {{ availed_percentage }}%"></div>
-                  </div>
-                  <span class="progress-description">
-                    {{ availed_percentage }}% Availed Leave
-                  </span>
+                <span class="info-box-number">{{leave_totals.availed_leave_sum}}</span>
               </div>
               <!-- /.info-box-content -->
             </div>
             <!-- /.info-box -->
           </div>
           <!--  col-->
-                  <div class="col-md-3 col-sm-6 col-12">
+          <div class="col-md-3 col-sm-6 col-12">
             <div class="info-box bg-gradient-primary">
               <span class="info-box-icon"><i  class="fas fa-project-diagram"></i></span>
-
               <div class="info-box-content">
                 <span class="info-box-text">Project</span>
                 <span class="info-box-number">{{total_projects}}</span>
-
-
               </div>
               <!-- /.info-box-content -->
             </div>

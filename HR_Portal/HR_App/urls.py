@@ -39,6 +39,7 @@ urlpatterns = [
       path('export-to-excel/', views.export_to_excel_handbook, name='export_to_excel'),
       path('leave/list/approved/', views.Leave_list_approved, name='LeavelistApproved'),
       path('leave/status/<int:leave_id>/', views.update_leave_approve, name='update_leave_status'),
+      path('leave/status/dashboard/<int:leave_id>/', views.update_leave_approve_dashboard,name='update_leave_status_dashboard'),
       path('add-department/', views.add_department, name='add_department'),
       path('add-designation/', views.add_designation, name='add_designation'),
 
