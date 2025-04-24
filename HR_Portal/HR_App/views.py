@@ -2,28 +2,31 @@ import os
 import random
 import re
 import string
+from itertools import chain
+from operator import attrgetter
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
 from django.core.files.storage import FileSystemStorage
 from django.core.mail import send_mail
 from django.core.paginator import Paginator
-from django.db import transaction
-from django.db.models import Prefetch, Sum
+from django.db import transaction, models
+from django.db.models import Prefetch, Sum, Value, CharField
 from django.shortcuts import render, redirect, get_object_or_404
 import json
 from django.http import JsonResponse, HttpResponse
 from django.contrib.auth.hashers import make_password, check_password
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 from django.utils import timezone
 from django.contrib import messages
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_protect, csrf_exempt
 from Project.models import Project,Task
 from .models import EmployeeBISP, Leave, LeaveType, Designation, Department, HandbookPDF, \
-    HandbookAcknowledgement, EmpLeaveType, EmployeeBISPHistory, LeaveTypeHistory  # Import your Employee model
+    HandbookAcknowledgement, EmpLeaveType, EmployeeBISPHistory, LeaveTypeHistory, \
+    LearningVideo  # Import your Employee model
 from openpyxl import Workbook
 from datetime import date, timedelta
 
@@ -113,7 +116,7 @@ def Hr(request):
     project_qs = Project.objects.filter(admin=employee) | Project.objects.filter(leader=employee)
 
     #All Employee leave
-    employee_leaves = Leave.objects.all().order_by('-created_at')[:5]
+    employee_leaves = Leave.objects.filter(status='Pending').order_by('-created_at')[:5]
 
     # Get related tasks from those projects
     task_qs = Task.objects.filter(assigned_to=employee)
@@ -156,6 +159,44 @@ def Hr(request):
         availed_leave_sum=Sum('availed_leave')
     )
 
+    # Annotate and fetch
+    latest_tasks = Task.objects.filter(
+        assigned_to__isnull=False,
+        status='Claimed Completed'
+    ).annotate(
+        activity_type=Value('Task', output_field=CharField())
+    )
+
+    latest_leaves = Leave.objects.filter(employee__isnull=False).annotate(
+        activity_type=Value('Leave', output_field=CharField())
+    )
+
+    latest_projects = Project.objects.filter(
+        team_members__isnull=False
+    ).annotate(
+        activity_type=Value('Project', output_field=CharField())
+    )
+
+    # Attach normalized datetime (prefer updated_at or fallback)
+    for item in chain(latest_tasks, latest_leaves, latest_projects):
+        if hasattr(item, 'timestamp'):
+            item.activity_datetime = item.timestamp
+        elif hasattr(item, 'created_at'):
+            item.activity_datetime = item.created_at
+        elif hasattr(item, 'start_date'):
+            item.activity_datetime = datetime.combine(item.start_date, time.min)
+        elif hasattr(item, 'assigned_date'):
+            item.activity_datetime = item.assigned_date
+        else:
+            item.activity_datetime = datetime.min  # fallback
+
+    # Combine and get latest 10
+    combined_activities = sorted(
+        chain(latest_tasks[:5], latest_leaves[:5], latest_projects[:5]),
+        key=lambda x: x.activity_datetime,
+        reverse=True
+    )[:10]
+
     context = {
         'total_projects': project_qs.count(),
         'total_tasks': task_qs.count(),
@@ -167,6 +208,7 @@ def Hr(request):
         'status_percentages': status_percentages,
         'leave_totals': aggregated_leave,
         'employee_leaves': employee_leaves,
+        'latest_activities': combined_activities,
 
     }
 
@@ -184,14 +226,33 @@ def Employee(request):
     employee = EmployeeBISP.objects.get(id=employee_id)
 
     # Get all projects where the employee is admin or leader
-    project_qs = Project.objects.filter(team_members =employee)
+    project_qs = Project.objects.filter(team_members = employee)
 
     # Get related tasks from those projects
     task_qs = Task.objects.filter(assigned_to=employee)
     total_tasks = task_qs.count()
     status_labels = ['Pending', 'Inprogress', 'Claimed Completed', 'Completed', 'On Hold']
     status_counts = {label: task_qs.filter(status=label).count() for label in status_labels}
-    latest_tasks = Task.objects.select_related('assigned_to').order_by('-created_at')[:5]#pending
+    # latest_tasks = Task.objects.select_related('assigned_to', 'project') \
+    #                    .filter(assigned_to=employee) \
+    #                    .order_by('-created_at')[:2]
+    # latest_leaves = Leave.objects.filter(employee=employee).order_by('-created_at')[:2]
+    # latest_projects = Project.objects.filter(team_members=employee).order_by('-created_at')[:2]
+
+    # # Fetch latest items individually
+    # latest_tasks = Task.objects.filter(assigned_to=employee).annotate(
+    #     activity_type=models.Value('Task', output_field=models.CharField())).order_by('-created_at')[:5]
+    # latest_leaves = Leave.objects.filter(employee=employee).annotate(
+    #     activity_type=models.Value('Leave', output_field=models.CharField())).order_by('-start_date')[:5]
+    # latest_projects = Project.objects.filter(team_members=employee).annotate(
+    #     activity_type=models.Value('Project', output_field=models.CharField())).order_by('-created_at')[:5]
+    #
+    # # Combine and sort by date
+    # combined_activities = sorted(
+    #     chain(latest_tasks, latest_leaves, latest_projects),
+    #     key=lambda x: getattr(x, 'created_at', getattr(x, 'start_date', getattr(x, 'assigned_date', None))),
+    #     reverse=True
+    # )
 
     # Calculate percentage for each status
     status_percentages = {}
@@ -227,6 +288,43 @@ def Employee(request):
     }
     overdue_tasks = task_qs.filter(status__in=['Pending', 'Inprogress', 'Claimed Completed', 'On Hold']).count()
 
+    # Annotate and fetch
+    latest_tasks = Task.objects.filter(
+        assigned_to=employee
+    ).annotate(
+        activity_type=Value('Task', output_field=CharField())
+    )
+
+    latest_leaves = Leave.objects.filter(employee=employee).annotate(
+        activity_type=Value('Leave', output_field=CharField())
+    )
+
+    latest_projects = Project.objects.filter(
+        team_members=employee
+    ).annotate(
+        activity_type=Value('Project', output_field=CharField())
+    )
+
+    # Attach normalized datetime (prefer updated_at or fallback)
+    for item in chain(latest_tasks, latest_leaves, latest_projects):
+        if hasattr(item, 'timestamp'):
+            item.activity_datetime = item.timestamp
+        elif hasattr(item, 'created_at'):
+            item.activity_datetime = item.created_at
+        elif hasattr(item, 'start_date'):
+            item.activity_datetime = datetime.combine(item.start_date, time.min)
+        elif hasattr(item, 'assigned_date'):
+            item.activity_datetime = item.assigned_date
+        else:
+            item.activity_datetime = datetime.min  # fallback
+
+    # Combine and get latest 10
+    combined_activities = sorted(
+        chain(latest_tasks[:5], latest_leaves[:5], latest_projects[:5]),
+        key=lambda x: x.activity_datetime,
+        reverse=True
+    )[:10]
+
     context = {
         'total_projects': project_qs.count(),
         'total_tasks': task_qs.count(),
@@ -237,7 +335,7 @@ def Employee(request):
         'overdue_tasks': overdue_tasks,
         'status_percentages': status_percentages,
         'leave_totals': aggregated_leave,
-        'latest_tasks':latest_tasks
+        'latest_activities': combined_activities,
 
     }
 
@@ -280,10 +378,6 @@ def Logout(request):
     request.session.flush()
     return render(request,'admin_templates/login.html')
 
-def Learning_Video(request):
-    if not request.session.get('employee_id'):
-        return redirect('Login_user_page')
-    return render(request,'admin_templates/Learning_Video.html')
 
 #Show Leave List for Team members ID-12
 def Leave_list_approved(request):
@@ -1839,3 +1933,36 @@ def export_to_excel_handbook(request):
     # Save the workbook into the response
     wb.save(response)
     return response
+
+#Render Learning Video Page
+def Learning_video(request):
+    if not request.session.get('employee_id'):
+        return redirect('Login_user_page')
+    project_videos = LearningVideo.objects.filter(section="Project Management")
+    timesheet_videos = LearningVideo.objects.filter(section="Timesheet Management")
+    leave_videos = LearningVideo.objects.filter(section="Leave Management")
+    context = {
+        'project_videos': project_videos,
+        'timesheet_videos': timesheet_videos,
+        'leave_videos': leave_videos,
+        'is_admin': request.session.get('role') == 'Administrator',
+    }
+    return render(request, 'admin_templates/Learning_Video.html', context)
+
+@csrf_exempt
+#For Upload Learning Video
+def upload_learning_video(request):
+    if not request.session.get('employee_id'):
+        return redirect('Login_user_page')
+    if request.method == 'POST':
+        section = request.POST.get('section')
+        title = request.POST.get('title')
+        video = request.FILES.get('video')
+        if section and title and video:
+            new_video = LearningVideo.objects.create(title=title, section=section, video=video)
+            return JsonResponse({
+                'success': True,
+                'title': new_video.title,
+                'video_url': new_video.video.url
+            })
+    return JsonResponse({'success': False, 'message': 'Upload failed'})

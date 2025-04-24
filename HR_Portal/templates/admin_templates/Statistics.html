@@ -10,6 +10,22 @@
     .progress {
         height: 20px;
     }
+    .status-dot.red { background-color: #ffc107; }       /* Pending -> Warning */
+    .status-dot.green { background-color: #28a745; }      /* Completed -> Success */
+    .status-dot.purple { background-color: #dc3545; }     /* On Hold -> Danger */
+    .status-dot.orange { background-color: #17a2b8; }     /* Inprogress -> Info */
+    .status-dot.blue { background-color: #007bff; }       /* Claimed Completed -> Primary */
+
+<!--    .progress-bar {-->
+<!--    position: relative;-->
+<!--    font-size: 12px;-->
+<!--    overflow: visible;  /* Allow text to overflow */-->
+<!--    white-space: nowrap;-->
+<!--    color: #000;-->
+<!--    padding-left: 4px;-->
+<!--}-->
+
+
     .status-dot {
         height: 10px;
         width: 10px;
@@ -39,14 +55,14 @@
 }
 
 .chatbox-message {
-    background-color: #f1f1f1;
-    border-radius: 8px;
-    padding: 10px;
-    margin-bottom: 10px;
-    position: relative;
-    max-width: 75%;
-    word-wrap: break-word;
+    width: 95%;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 1rem;
+    border-radius: 10px;
 }
+
 
 .chatbox-message-header {
     font-weight: bold;
@@ -90,6 +106,10 @@
     font-size: 12px;
     color: #6c757d !important;
 }
+.text-dark {
+   font-size: 12px;
+}
+
 
 .text-muted small {
     font-size: 10px;
@@ -151,72 +171,63 @@ hr {
               <hr>
 
               {% if employee_leaves %}
-                <div class="chatbox-container" style="width: 500px;">
+                <div class="chatbox-container" style="width: 100%;">
                   {% for leave in employee_leaves %}
                     <div class="chatbox-message mb-3 {% if leave.status == 'Pending' %} pending {% elif leave.status == 'Approved' %} approved {% elif leave.status == 'Rejected' %} rejected {% endif %}">
+                          <!-- Left content: Employee and leave info -->
+                          <div style="flex: 1;">
+                            <strong>{{ leave.employee.name }}</strong>
+                            <small class="text-muted">({{ leave.employee.designation.title }}, {{ leave.employee.department.name }})</small><br>
+                            <strong>{{ leave.leave_type.name }}</strong>: {{ leave.start_date|date:"F j" }} to {{ leave.end_date|date:"F j" }} <br>
+                            <span class="text-muted">Reason:</span><span class="text-dark"> {{ leave.reason|truncatechars:50 }}</span><br>
+                            {% if leave.approved_by.name %}
+                            <span class="text-muted">Approved By:</span> {{ leave.approved_by.name|truncatechars:50 }}
+                            {% endif %}
+                          </div>
 
-                      <!-- Flex layout for leave details (left side) and actions (right side) -->
-                      <div class="d-flex align-items-center">
+                          <!-- Right content: Status form -->
+                          <div class="chatbox-status-form">
+                            <form method="POST" action="{% url 'update_leave_status_dashboard' leave.id %}" id="status-form-{{ leave.id }}">
+                              {% csrf_token %}
+                              <div class="dropdown mb-2">
+                                <button class="btn btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                                  {% if leave.status == 'Approved' %}
+                                    style="background-color: green; color: white;"
+                                  {% elif leave.status == 'Rejected' %}
+                                    style="background-color: red; color: white;"
+                                  {% elif leave.status == 'Withdrawn' %}
+                                    style="background-color: grey; color: white;"
+                                  {% else %}
+                                    style="background-color: yellow; color: black;"
+                                  {% endif %}>
+                                  {{ leave.status }}
+                                </button>
+                                {% if leave.status != 'Rejected' %}
+                                <ul class="dropdown-menu">
+                                  {% if leave.status != 'Withdrawn' %}
+                                    {% if leave.status != 'Approved' %}
+                                      <li><a class="dropdown-item text-success" href="#" onclick="submitStatusForm('{{ leave.id }}', 'Approved')">Approve</a></li>
+                                    {% endif %}
+                                    {% if leave.status != 'Rejected' %}
+                                      <li><a class="dropdown-item text-danger" href="#" onclick="showRejectBox('{{ leave.id }}')">Reject</a></li>
+                                    {% endif %}
+                                  {% else %}
+                                    <li><span class="dropdown-item text-muted">Approve</span></li>
+                                    <li><span class="dropdown-item text-muted">Reject</span></li>
+                                  {% endif %}
+                                </ul>
+                                {% endif %}
+                              </div>
 
-                        <!-- Employee Info and Leave Dates (Left Side) -->
-                        <div class="me-3" style="flex: 1;">
-                          <strong>{{ leave.employee.name }}</strong>
-                          <small class="text-muted">({{ leave.employee.designation.title }}, {{ leave.employee.department.name }})</small><br>
-                          <strong>{{ leave.leave_type.name }}</strong>: {{ leave.start_date }} to {{ leave.end_date }} <br>
-                          <span class="text-muted">Reason:</span> {{ leave.reason|truncatechars:50 }}<br>
-                          {% if leave.approved_by.name %}
-                          <span class="text-muted">Approved By:</span> {{ leave.approved_by.name |truncatechars:50 }}
-                          {% endif %}
+                              <input type="hidden" name="status" id="status-input-{{ leave.id }}">
+                              <div class="reject-box" id="reject-box-{{ leave.id }}" style="display: none;">
+                                <textarea class="form-control mb-1" name="rejection_reason" rows="2" placeholder="Reason for rejection" required></textarea>
+                                <button type="submit" name="status" value="Rejected" class="btn btn-sm btn-danger">Submit Rejection</button>
+                              </div>
+                            </form>
+                          </div>
                         </div>
-                        <!-- Action Taken and Status Dropdown (Right Side) -->
-                              <form method="POST" action="{% url 'update_leave_status_dashboard' leave.id %}" id="status-form-{{ leave.id }}">
-                                      {% csrf_token %}
-                                     <div class="dropdown">
-                                      <button class="btn btn-sm dropdown-toggle dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"
-                                        {% if leave.status == 'Approved' %}
-                                          style="background-color: green; color: white;"
-                                        {% elif leave.status == 'Rejected' %}
-                                          style="background-color: red; color: white;"
-                                        {% elif leave.status == 'Withdrawn' %}
-                                          style="background-color: grey; color: white;"
-                                        {% else %}
-                                          style="background-color: yellow; color: black;"
-                                        {% endif %}>
-                                        {{ leave.status }}
-                                      </button>
 
-                                      {% if leave.status != 'Rejected' %}
-                                        <ul class="dropdown-menu">
-                                          {% if leave.status != 'Withdrawn' %}
-                                            {% if leave.status != 'Approved' %}
-                                              <li>
-                                                <a class="dropdown-item text-success" href="#" onclick="submitStatusForm('{{ leave.id }}', 'Approved')">Approve</a>
-                                              </li>
-                                            {% endif %}
-                                            {% if leave.status != 'Rejected' %}
-                                              <li>
-                                                <a class="dropdown-item text-danger" href="#" onclick="showRejectBox('{{ leave.id }}')">Reject</a>
-                                              </li>
-                                            {% endif %}
-                                          {% else %}
-                                            <li>
-                                              <span class="dropdown-item text-muted" style="background-color: #f8f9fa; pointer-events: none;">Approve</span>
-                                            </li>
-                                            <li>
-                                              <span class="dropdown-item text-muted" style="background-color: #f8f9fa; pointer-events: none;">Reject</span>
-                                            </li>
-                                          {% endif %}
-                                        </ul>
-                                      {% endif %}
-                                    </div>
-                                      <input type="hidden" name="status" id="status-input-{{ leave.id }}">
-                                      <div class="reject-box mt-2" id="reject-box-{{ leave.id }}" style="display: none;">
-                                        <textarea class="form-control mb-1" name="rejection_reason" rows="2" placeholder="Reason for rejection" required></textarea>
-                                        <button type="submit" name="status" value="Rejected" class="btn btn-sm btn-danger">Submit Rejection</button>
-                                      </div>
-                               </form>
-                        </div>
-                      </div>
                   {% endfor %}
                 </div>
               {% else %}
@@ -229,33 +240,127 @@ hr {
                  </div>
             </div>
           </div>
-
         {% endif %}
 
-        <!-- Latest Activity -->
+            <!--For Role Employee only-->
+          {% if request.session.role == 'Employee' %}
         <div class="col-md-4 mb-4 d-flex">
             <div class="card p-3 h-100 w-100">
                 <h5>Latest Activity</h5>
                 <hr>
-        {% if latest_tasks %}
-                {% for task in latest_tasks %}
-                <div class="d-flex justify-content-between align-items-center bg-light p-2 rounded mb-2">
-              <div>
-                <i class="bi bi-clipboard-data text-primary"></i>
-                <strong class="ms-2">{{ task.task_title }}</strong>
-              </div>
-              <span class="badge bg-warning">{{task.status }}</span>
-            </div>
-                {% endfor %}
 
-        {% endif %}
-                <!-- Horizontal Line -->
-                <hr class="mt-auto">
-                  <div class="text-center mt-2">
-                        <a href="{% url 'Project:project_list' %}">View all </a>
-                 </div>
+                <!-- Scrollable Wrapper -->
+                <div style="max-height: 400px; overflow-y: auto; padding-right: 10px;">
+                    {% for activity in latest_activities %}
+                        {% if activity.activity_type == 'Task' %}
+                            <div class="mb-2">
+                                <strong class="text-primary">📝 Task:</strong>
+                                <a href="{% url 'Project:task_detail' activity.id %}" class="text-decoration-none">{{ activity.task_title }}</a>
+                                <div class="text-muted small">Project: {{ activity.project.project_name }} | {{ activity.created_at|date:"M d, Y H:i" }}</div>
+                                <div class="text-muted small">Assigned by :  <span class="text-dark small">{{ activity.project.admin.name }} </span></div>
+                                <span class="badge
+                                    {% if activity.status == 'Pending' %}bg-warning
+                                    {% elif activity.status == 'Inprogress' %}bg-info
+                                    {% elif activity.status == 'Claimed Completed' %}bg-primary
+                                    {% elif activity.status == 'Completed' %}bg-success
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ activity.status }}
+                                </span>
+                            </div>
+                        {% elif activity.activity_type == 'Leave' %}
+                            <div class="mb-2">
+                                <strong class="text-success">🌿 Leave:</strong> {{ activity.leave_type.name }}
+                                <div class="text-muted small">{{ activity.start_date|date:"M d" }} → {{ activity.end_date|date:"M d, Y" }}</div>
+                                   {% if activity.status == 'Approved' or activity.status == 'Rejected' %}
+                                    {% if activity.approved_by %}
+                                <div class="text-muted small">Approved by: <span class="text-dark small">{{ activity.approved_by.name }}</span></div>
+                                    {% endif %}
+                                {% endif %}
+                                <span class="badge
+                                    {% if activity.status == 'Pending' %}bg-warning
+                                    {% elif activity.status == 'Approved' %}bg-success
+                                    {% elif activity.status == 'Rejected' %}bg-danger
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ activity.status }}
+                                </span>
+                            </div>
+                        {% elif activity.activity_type == 'Project' %}
+                            <div class="mb-2">
+                                <strong class="text-info">📁 Project Assigned:</strong> {{ activity.project_name }}
+                                <div class="text-muted small">Assigned by : {{ activity.admin.name}}</div>
+                            </div>
+                        {% endif %}
+                        <hr>
+                    {% empty %}
+                        <p class="text-muted">No recent activity found.</p>
+                    {% endfor %}
+                </div>
+
             </div>
         </div>
+        {% endif %}
+
+
+        <!--For Administration and Manager-->
+         {% if request.session.role == 'Administrator' or request.session.role == 'Manager' %}
+            <!-- Latest Activity -->
+        <div class="col-md-4 mb-4 d-flex">
+            <div class="card p-3 h-100 w-100">
+                <h5>Latest Activity</h5>
+                <hr>
+                 <!-- Scrollable Wrapper -->
+                <div style="max-height: 400px; overflow-y: auto; padding-right: 10px;">
+                    {% for activity in latest_activities %}
+                        {% if activity.activity_type == 'Task' %}
+                            <div class="mb-2">
+                                <strong class="text-primary">📝 Task:</strong>
+                                <a href="{% url 'Project:task_detail' activity.id %}" class="text-decoration-none">{{ activity.task_title }}</a>
+                                <div class="text-muted small">Project:  <span class="text-dark small">{{ activity.project.project_name }} | {{ activity.created_at|date:"M d, Y H:i" }}</span></div>
+                                <div class="text-muted small">Assigned to :  <span class="text-dark small">{{ activity.assigned_to.name }} </span></div>
+
+                                <span class="badge
+                                    {% if activity.status == 'Pending' %}bg-warning
+                                    {% elif activity.status == 'Inprogress' %}bg-info
+                                    {% elif activity.status == 'Claimed Completed' %}bg-primary
+                                    {% elif activity.status == 'Completed' %}bg-success
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ activity.status }}
+                                </span>
+                            </div>
+                        {% elif activity.activity_type == 'Leave' %}
+                            <div class="mb-2">
+                                <strong class="text-success">🌿 Leave:</strong> {{ activity.leave_type.name }}
+                                <div class="text-muted small">Apply by : <span class="text-dark small">{{activity.employee.name}} ({{ activity.start_date|date:"M d" }} → {{ activity.end_date|date:"M d, Y" }})</span></div>
+                                {% if activity.status == 'Approved' or activity.status == 'Rejected' %}
+                                    {% if activity.approved_by %}
+                                <div class="text-muted small">Approved by: <span class="text-dark small">{{ activity.approved_by.name }}</span></div>
+                                    {% endif %}
+                                {% endif %}
+                                <span class="badge
+                                    {% if activity.status == 'Pending' %}bg-warning
+                                    {% elif activity.status == 'Approved' %}bg-success
+                                    {% elif activity.status == 'Rejected' %}bg-danger
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ activity.status }}
+                                </span>
+                            </div>
+                        {% elif activity.activity_type == 'Project' %}
+                            <div class="mb-2">
+                                <strong class="text-info">📁 Project Assigned:</strong> {{ activity.project_name }}
+                                <div class="text-muted small">Assigned by : <span class="text-dark small">{{ activity.admin.name}}</span></div>
+                            </div>
+                        {% endif %}
+                        <hr>
+                    {% empty %}
+                        <p class="text-muted">No recent activity found.</p>
+                    {% endfor %}
+                </div>
+
+
+
+            </div>
+        </div>
+           {% endif %}
             <!-- Recent Projects -->
             <div class="col-md-4 mb-4 d-flex">
                 <div class="card p-3 h-100 w-100 d-flex flex-column">
@@ -269,7 +374,7 @@ hr {
                             </tr>
                         </thead>
                         <tbody>
-                            {% for project in projects|slice:":5" %}
+                            {% for project in projects|slice:":10" %}
                                 <tr>
                                     <td>{{ project.project_name }}</td>
                                     <td>{{ project.rate_status }}</td>
@@ -302,9 +407,9 @@ hr {
     </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-
+<!-- Show reject box when 'Reject' is clicked-->
 <script>
-  // Show reject box when 'Reject' is clicked
+
   function showRejectBox(leaveId) {
     document.getElementById('reject-box-' + leaveId).style.display = 'block';
   }
@@ -315,6 +420,5 @@ hr {
     document.getElementById('status-form-' + leaveId).submit();
   }
 </script>
-
 
 {% endblock %}

@@ -234,6 +234,7 @@ class Leave(models.Model):
     leave_days = models.FloatField(default=1.0)  # Store 0.5, 1.0, 2.0, etc.
     half_day_type_name=models.CharField(max_length=250,null=True)
     created_at = models.DateTimeField(default=timezone.now)
+    timestamp = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ['-created_at']
@@ -262,3 +263,16 @@ class HandbookAcknowledgement(models.Model):
         unique_together = ('pdf', 'employee')  # prevent duplicate acknowledgements
 
 
+class LearningVideo(models.Model):
+    SECTION_CHOICES = [
+        ('Project Management', 'Project Management'),
+        ('Timesheet Management', 'Timesheet Management'),
+        ('Leave Management', 'Leave Management'),
+    ]
+
+    title = models.CharField(max_length=100)
+    section = models.CharField(max_length=50, choices=SECTION_CHOICES)
+    video = models.FileField(upload_to='learning_videos/')
+
+    def __str__(self):
+        return self.title

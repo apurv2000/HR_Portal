@@ -64,7 +64,6 @@
                       <th>Action By</th>
                     </tr>
 
-
                 </thead>
                 <tbody>
                 {% for employee in employees %}
@@ -72,7 +71,25 @@
                     <tr>
                       <td>{{ leave.leave_type.name }}</td>
                       <td>{{ leave.leave_days  }}</td>
-                      <td>{{ leave.reason }}</td>
+                      <td>
+                            <a href="#" data-bs-toggle="modal" data-bs-target="#reasonModal{{ leave.id }}" class="text-decoration-none text-primary">{{ leave.reason|truncatewords:3 }}...</a>
+                      </td>
+                       <!-- Modal for Full Reason -->
+                          <div class="modal fade" id="reasonModal{{ leave.id }}" tabindex="-1" aria-labelledby="reasonModalLabel{{ leave.id }}" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered modal-sm">
+                              <div class="modal-content border-0 shadow-sm rounded-3">
+                                <div class="modal-header bg-light">
+                                  <div class="w-100 text-center">
+                                  <h6 class="modal-title fw-semibold m-0" id="reasonModalLabel{{ leave.id }}">Full Reason</h6>
+                                  </div>
+                                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body small">
+                                  {{ leave.reason }}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
                      <td class="text-center">
                       <div class="dropdown">
                         <button class="btn btn-sm dropdown-toggle
@@ -99,7 +116,6 @@
                           {% endif %}
                         </ul>
                       </div>
-
                       {% if leave.status == 'Rejected' and leave.reject_reason %}
                           <a href="#"
                                    data-bs-toggle="tooltip"
